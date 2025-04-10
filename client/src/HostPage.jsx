@@ -7,42 +7,94 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Check, Copy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import Player from "@/components/player";
-import QuestionPreview from "@/components/question-preview";
+import { useState, useRef, useEffect } from "react";
+import Player from "@/components/host/player";
+import QuestionPreview from "@/components/host/question-preview";
+import QuestionControl from "./components/host/question-control";
+import { toast } from "sonner";
 
-const mockQuestions = [
-  {
-    id: 1,
-    content:
-      '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-    time: 20,
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: "Paris",
-    hints: [
-      "It's in Western Europe",
-      "It's known for a famous tower",
-      "It's on the Seine River",
-      "It starts with 'P'",
+const mockQuestions = {
+  rounds: [
+    // Round 1
+    [
+      {
+        id: 1,
+        type: "multiple-choice",
+        content:
+          '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        time: 20,
+        options: ["London", "Berlin", "Paris", "Madrid"],
+        correctAnswer: "Paris",
+        hints: [
+          "It's in Western Europe",
+          "It's known for a famous tower",
+          "It's on the Seine River",
+          "It starts with 'P'",
+        ],
+      },
+      {
+        id: 2,
+        type: "short-phrase",
+        content:
+          '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        time: 20,
+        options: ["London", "Berlin", "Paris", "Madrid"],
+        correctAnswer: "Paris",
+        hints: [
+          "It's in Western Europe",
+          "It's known for a famous tower",
+          "It's on the Seine River",
+          "It starts with 'P'",
+        ],
+      },
     ],
-  },
-  {
-    id: 2,
-    content:
-      '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-    time: 20,
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: "Paris",
-    hints: [
-      "It's in Western Europe",
-      "It's known for a famous tower",
-      "It's on the Seine River",
-      "It starts with 'P'",
+    // Round 2
+    [
+      {
+        id: 1,
+        type: "multiple-choice",
+        content:
+          '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        time: 20,
+        options: ["London", "Berlin", "Paris", "Madrid"],
+        correctAnswer: "Paris",
+        hints: [
+          "It's in Western Europe",
+          "It's known for a famous tower",
+          "It's on the Seine River",
+          "It starts with 'P'",
+        ],
+      },
+      {
+        id: 2,
+        type: "short-phrase",
+        content:
+          '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        time: 20,
+        options: ["London", "Berlin", "Paris", "Madrid"],
+        correctAnswer: "Paris",
+        hints: [
+          "It's in Western Europe",
+          "It's known for a famous tower",
+          "It's on the Seine River",
+          "It starts with 'P'",
+        ],
+      },
     ],
-  },
-];
+  ],
+};
+
+const PlayerStateBadge = ({ state }) => {
+  let badgeClassnames = "font-bold ml-4 ";
+  if (state === "Disconnected") badgeClassnames += "bg-red-500";
+  else if (state === "Connected" || state === "Answered")
+    badgeClassnames += "bg-green-500";
+  else badgeClassnames += "bg-gray-500";
+  return <Badge className={badgeClassnames}>{state}</Badge>;
+};
 
 export default function HostPage() {
   const [gameState, setGameState] = useState("waiting");
@@ -52,12 +104,40 @@ export default function HostPage() {
   const [answeredPlayers, setAnsweredPlayers] = useState([]);
   const [activeTab, setActiveTab] = useState("game");
   const [shownHints, setShownHints] = useState([]);
+  const [playerStates, setPlayerStates] = useState([
+    "Disconnected",
+    "Connected",
+    "Waiting",
+    "Answered",
+  ]);
   // const [players, setPlayers] = useState(mockPlayers);
-  const [joinLink, setJoinLink] = useState(
-    "https://quiz.example.com/join/ABC123"
-  );
 
-  const copyJoinLink = () => {};
+  // const socket = useRef(null);
+  // useEffect(() => {
+  //   socket.current = new WebSocket("ws://localhost:3000"); // Replace with your server URL
+
+  //   // Handle socket connection
+  //   socket.current.onopen = (event) => {
+  //     socket.current.send("hello");
+  //     console.log("websocket connection opened");
+  //   };
+
+  //   // Handle incoming messages
+  //   socket.current.onmessage = (event) => {
+  //     const data = event.data.toString();
+  //     console.log(data);
+  //   };
+
+  //   // Handle socket close
+  //   socket.current.onclose = () => {
+  //     console.log("WebSocket connection closed");
+  //   };
+
+  //   return () => {
+  //     // Clean up on unmount
+  //     socket.current.close();
+  //   };
+  // }, []);
 
   // const fetchPlayersData = async () => {
   //   try {
@@ -80,11 +160,31 @@ export default function HostPage() {
   //   }
   // };
 
+  const nextQuestion = () => {
+    if (
+      currentQuestionIndex <
+      mockQuestions.rounds[currentRoundIndex].length - 1
+    ) {
+      // Go to next question
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setGameState("questionStart");
+    } else if (currentRoundIndex < mockQuestions.rounds.length - 1) {
+      // Go to next round
+      setCurrentRoundIndex(currentRoundIndex + 1);
+      setCurrentQuestionIndex(0);
+      setGameState("questionStart");
+    } else {
+      // Game end
+      setGameState("gameFinished");
+    }
+  };
+
   const playerData = {
     players: [
-      { id: 1, name: "A", password: "123" },
-      { id: 2, name: "B", password: "456" },
-      { id: 3, name: "C", password: "789" },
+      { id: 1, name: "A", password: "123", score: 10 },
+      { id: 2, name: "B", password: "456", score: 20 },
+      { id: 3, name: "C", password: "789", score: 30 },
+      { id: 4, name: "D", password: "abc", score: 40 },
     ],
   };
 
@@ -100,18 +200,23 @@ export default function HostPage() {
             </div>
             <CardDescription className="flex justify-between items-center">
               <span>
-                {/* {gameState === "waiting"
+                {gameState === "waiting"
                   ? "Waiting for players to join"
-                  : gameState === "playing"
+                  : gameState === "questionStart"
                   ? `Round ${currentRoundIndex + 1}, Question ${
                       currentQuestionIndex + 1
-                    } of ${totalQuestionsInRound}`
-                  : gameState === "showingResults"
-                  ? "Showing Results"
-                  : gameState === "roundEnd"
-                  ? `End of Round ${currentRoundIndex + 1}`
-                  : "Game Finished"} */}
-                Waiting
+                    } of ${mockQuestions.rounds[currentRoundIndex].length}`
+                  : gameState === "questionEnd"
+                  ? `Round ${currentRoundIndex + 1}, Question ${
+                      currentQuestionIndex + 1
+                    } of ${
+                      mockQuestions.rounds[currentRoundIndex].length
+                    } finished`
+                  : gameState === "showResults"
+                  ? "Showing results"
+                  : gameState === "showRoundResults"
+                  ? `Showing round ${currentRoundIndex + 1} results`
+                  : "Game Finished"}
               </span>
             </CardDescription>
           </CardHeader>
@@ -123,151 +228,144 @@ export default function HostPage() {
             >
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="game">Game</TabsTrigger>
-                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="question">Questions</TabsTrigger>
                 <TabsTrigger value="players">Players</TabsTrigger>
               </TabsList>
 
               <TabsContent value="game" className="space-y-4 mt-4">
-                BRUH
-                {/* {gameState === "waiting" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-blue-500" />
-                      <h3 className="font-semibold">Players ({players.length})</h3>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {players.map((player) => (
-                        <div key={player.id} className="bg-white p-2 rounded-md shadow-sm">
-                          {player.username}
-                        </div>
-                      ))}
-                    </div>
-
-                    <Button
-                      className="w-full bg-blue-600 hover:bg-blue-700 mt-4"
-                      onClick={startGame}
-                      disabled={players.length === 0}
-                    >
-                      Start Game
-                    </Button>
-                  </div>
-                )} */}
-                {/* {gameState === "playing" && currentQuestion && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <div className="text-lg font-semibold">Time Left: {timeLeft}s</div>
-                      <div className="text-sm">
-                        {answeredPlayers.length} / {players.length} answered
-                      </div>
-                    </div>
-
-                    <QuestionDisplay question={currentQuestion} showAnswer={false} />
-
-                    <div className="bg-blue-50 p-4 rounded-md">
-                      <h3 className="font-semibold mb-2">Hints</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {currentQuestion.hints.map((hint, index) => (
-                          <Button
-                            key={index}
-                            variant={shownHints.includes(index) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => sendHint(index)}
-                            disabled={shownHints.includes(index)}
-                            className="justify-start"
-                          >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            {shownHints.includes(index) ? hint : `Send Hint ${index + 1}`}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Button variant="outline" onClick={showResults} className="w-full">
-                      End Question & Show Results
-                    </Button>
-                  </div>
-                )} */}
-                {/* {gameState === "showingResults" && currentQuestion && (
-                  <div className="space-y-6">
-                    <QuestionDisplay question={currentQuestion} showAnswer={true} />
-
-                    <PlayerAnswers players={mockPlayerAnswers} correctAnswer={currentQuestion.correctAnswer} />
-
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={nextQuestion}>
-                      {currentQuestionIndex < totalQuestionsInRound - 1
-                        ? "Next Question"
-                        : currentRoundIndex < totalRounds - 1
-                          ? "End Round & Show Leaderboard"
-                          : "End Game & Show Final Results"}
-                    </Button>
-                  </div>
-                )} */}
-                {/* {gameState === "roundEnd" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-center">Round {currentRoundIndex + 1} Complete!</h2>
-
-                    <div className="bg-white p-4 rounded-md shadow-sm">
-                      <h3 className="font-semibold mb-2 text-center">Round {currentRoundIndex + 1} Leaderboard</h3>
-                      <Leaderboard
-                        players={players.map((p) => ({
-                          ...p,
-                          score: p.roundScores[currentRoundIndex],
-                        }))}
-                      />
-                    </div>
-
-                    <div className="bg-white p-4 rounded-md shadow-sm">
-                      <h3 className="font-semibold mb-2 text-center">Overall Leaderboard</h3>
-                      <Leaderboard players={players} />
-                    </div>
-
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={nextRound}>
-                      Start Round {currentRoundIndex + 2}
-                    </Button>
-                  </div>
-                )} */}
-                {/* {gameState === "gameEnd" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-center">Game Complete!</h2>
-
-                    <div className="bg-white p-4 rounded-md shadow-sm">
-                      <h3 className="font-semibold mb-4 text-center">Final Leaderboard</h3>
-                      <Leaderboard players={players} />
-
-                      <div className="mt-6 space-y-4">
-                        <h4 className="font-semibold text-center">Round Breakdown</h4>
-                        <div className="grid grid-cols-4 gap-2 text-sm font-medium bg-gray-100 p-2 rounded">
-                          <div>Player</div>
-                          {mockRounds.map((round, index) => (
-                            <div key={index}>Round {index + 1}</div>
-                          ))}
-                        </div>
-                        {players.map((player) => (
-                          <div key={player.id} className="grid grid-cols-4 gap-2 text-sm border-b pb-2">
-                            <div>{player.username}</div>
-                            {player.roundScores.map((score, index) => (
-                              <div key={index}>{score} pts</div>
-                            ))}
+                <p className="text-xl font-bold text-blue-600">Players</p>
+                <div className="w-full grid grid-cols-4 gap-4">
+                  {playerData.players.map((player, index) => {
+                    return (
+                      <Card key={index}>
+                        <CardHeader className="w-full">
+                          <div className="flex justify-between items-center">
+                            <CardTitle>
+                              <div className="flex justify-between items-center text-xl font-bold text-blue-600">
+                                {player.name}
+                                <PlayerStateBadge state={playerStates[index]} />
+                              </div>
+                            </CardTitle>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </CardHeader>
+                        <CardContent>Score: {player.score}</CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
 
-                    <Button className="w-full" onClick={resetGame}>
-                      Play Again
-                    </Button>
-                  </div>
-                )} */}
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 m-1"
+                  onClick={() => {
+                    setPlayerStates(
+                      playerStates.map((state) => {
+                        if (state === "Disconnected") return state;
+                        return "Waiting";
+                      })
+                    );
+                    setGameState("questionStart");
+                  }}
+                  disabled={gameState !== "waiting"}
+                >
+                  Start game
+                </Button>
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 m-1"
+                  onClick={() => {
+                    setGameState("showResults");
+                    //TODO handle showing result/leaderboard
+                  }}
+                  disabled={gameState !== "questionEnd"}
+                >
+                  Show results
+                </Button>
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 m-1"
+                  onClick={() => {
+                    setGameState("showRoundResults");
+                    //TODO handle showing round result/leaderboard
+                  }}
+                  disabled={
+                    gameState !== "showResults" ||
+                    currentQuestionIndex <
+                      mockQuestions.rounds[currentRoundIndex].length - 1
+                  }
+                >
+                  Show round results
+                </Button>
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 m-1"
+                  onClick={() => {
+                    setPlayerStates(
+                      playerStates.map((state) => {
+                        if (state === "Disconnected") return state;
+                        return "Waiting";
+                      })
+                    );
+                    setGameState("questionStart");
+                    nextQuestion();
+                  }}
+                  disabled={
+                    gameState !== "showRoundResults" &&
+                    (gameState !== "showResults" ||
+                      currentQuestionIndex >=
+                        mockQuestions.rounds[currentRoundIndex].length - 1)
+                  }
+                >
+                  Next question
+                </Button>
+                <Button
+                  className="bg-red-600 hover:bg-red-700 font-bold m-1"
+                  onClick={() => {
+                    setPlayerStates(
+                      playerStates.map((state) => {
+                        if (state === "Disconnected") return state;
+                        return "Connected";
+                      })
+                    );
+                    setGameState("waiting");
+                    setCurrentQuestionIndex(0);
+                    setCurrentRoundIndex(0);
+                  }}
+                >
+                  Reset
+                </Button>
+
+                {gameState !== "waiting" ? (
+                  <QuestionControl
+                    key={currentQuestionIndex}
+                    question={
+                      mockQuestions.rounds[currentRoundIndex][
+                        currentQuestionIndex
+                      ]
+                    }
+                    onFinish={() => {
+                      setGameState("questionEnd");
+                    }}
+                  />
+                ) : (
+                  ""
+                )}
               </TabsContent>
 
-              <TabsContent value="preview" className="mt-4">
+              <TabsContent value="question" className="mt-4">
                 <div className="space-y-4">
-                  <h3 className="font-semibold">All Questions</h3>
-
-                  {mockQuestions.map((question) => {
+                  {mockQuestions.rounds.map((round, index) => {
                     return (
-                      <QuestionPreview key={question.id} question={question} />
+                      <>
+                        <h1 className="font-semibold text-2xl">
+                          Round {index + 1}
+                        </h1>
+
+                        {round.map((question) => {
+                          return (
+                            <QuestionPreview
+                              key={question.id}
+                              question={question}
+                            />
+                          );
+                        })}
+                      </>
                     );
                   })}
                 </div>

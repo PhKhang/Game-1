@@ -30,7 +30,7 @@ export default function Player({ id, name, password }) {
         <input
           type="text"
           className="w-48 outline rounded-xs px-1"
-          value={showPassword ? password : "••••••••"}
+          value={showPassword ? password : "•".repeat(password.length)}
           disabled
         />
         <Button

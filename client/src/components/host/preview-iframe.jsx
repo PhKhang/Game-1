@@ -1,5 +1,5 @@
 export default function PreviewIFrame({ htmlContent, ...props }) {
-  // Build the complete HTML structure with <!DOCTYPE>
+  // Define the complete HTML structure here
   const completeHtml = `
         <!DOCTYPE html>
         <html>

@@ -8,41 +8,45 @@ import {
   CardFooter,
   CardTitle,
 } from "@/components/ui/card";
-import PreviewIFrame from "@/components/preview-iframe";
+import PreviewIFrame from "@/components/host/preview-iframe";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import PreviewDiv from "./preview-div";
 
-export default function QuestionPreview({ question }) {
-  const [previewContent, setPreviewContent] = useState(question.content);
+export default function QuestionControl({ question, onFinish }) {
+  // The content for preview (question, hints or answer)
+  const [content, setContent] = useState(question.content);
+  const [finished, setFinished] = useState(false);
 
   return (
-    <Card className="shadow-lg mb-4">
+    <Card className="mt-4">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl font-bold text-blue-600">
             Question {question.id}
           </CardTitle>
         </div>
-        <CardDescription>Time: {question.time}s</CardDescription>
+        <CardDescription>
+          <Badge className="mr-2 font-bold bg-cyan-500">
+            Type: {question.type}
+          </Badge>
+          <Badge className="mr-2 font-bold bg-emerald-600">
+            Time: {question.time}s
+          </Badge>
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <PreviewIFrame htmlContent={previewContent} />
+        <PreviewIFrame htmlContent={content} />
       </CardContent>
       <CardFooter className="overflow-visible">
-        <Button
-          className="bg-red-600 hover:bg-red-700 m-1"
-          onClick={() => {
-            setPreviewContent(question.content);
-          }}
-        >
-          Question
-        </Button>
         {question.hints.map((hint, index) => (
           <Button
             key={index}
             className="bg-blue-500 hover:bg-blue-600 m-1"
             onClick={() => {
-              setPreviewContent(hint);
+              setContent(hint);
             }}
+            disabled={finished}
           >
             Hint {index + 1}
           </Button>
@@ -50,8 +54,11 @@ export default function QuestionPreview({ question }) {
         <Button
           className="bg-green-600 hover:bg-green-700 m-1"
           onClick={() => {
-            setPreviewContent(question.correctAnswer);
+            setContent(question.correctAnswer);
+            setFinished(true);
+            onFinish();
           }}
+          disabled={finished}
         >
           Answer
         </Button>
