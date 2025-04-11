@@ -87,6 +87,15 @@ const mockQuestions = {
   ],
 };
 
+const playerData = {
+  players: [
+    { id: 1, name: "A", password: "123", score: 10 },
+    { id: 2, name: "B", password: "456", score: 20 },
+    { id: 3, name: "C", password: "789", score: 30 },
+    { id: 4, name: "D", password: "abc", score: 40 },
+  ],
+};
+
 const PlayerStateBadge = ({ state }) => {
   let badgeClassnames = "font-bold ml-4 ";
   if (state === "Disconnected") badgeClassnames += "bg-red-500";
@@ -100,10 +109,7 @@ export default function HostPage() {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [answeredPlayers, setAnsweredPlayers] = useState([]);
   const [activeTab, setActiveTab] = useState("game");
-  const [shownHints, setShownHints] = useState([]);
   const [playerStates, setPlayerStates] = useState([
     "Disconnected",
     "Connected",
@@ -177,15 +183,6 @@ export default function HostPage() {
       // Game end
       setGameState("gameFinished");
     }
-  };
-
-  const playerData = {
-    players: [
-      { id: 1, name: "A", password: "123", score: 10 },
-      { id: 2, name: "B", password: "456", score: 20 },
-      { id: 3, name: "C", password: "789", score: 30 },
-      { id: 4, name: "D", password: "abc", score: 40 },
-    ],
   };
 
   return (
