@@ -6,7 +6,7 @@ export default function Leaderboard({ players }) {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-3xl">
       <div className="space-y-2">
         {sortedPlayers.length === 0 ? (
           <div className="text-center text-muted-foreground">

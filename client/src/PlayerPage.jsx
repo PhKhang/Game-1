@@ -13,13 +13,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AnswerMultipleChoice from "./components/player/answer-multiple-choice";
 import AnswerShortPhrase from "./components/player/answer-short-phrase";
 import Timer from "./components/player/timer";
+import Leaderboard from "./components/player/leaderboard";
 
 // Mock data
 const mockPlayers = [
-  { id: "1", username: "Player1", score: 30 },
-  { id: "2", username: "Player2", score: 20 },
-  { id: "3", username: "Player3", score: 40 },
-  { id: "4", username: "Player4", score: 10 },
+  { id: "1", name: "Player1", score: 30 },
+  { id: "2", name: "Player2", score: 20 },
+  { id: "3", name: "Player3", score: 40 },
+  { id: "4", name: "Player4", score: 10 },
 ];
 
 const mockQuestions = [
@@ -39,7 +40,7 @@ const mockQuestions = [
 ];
 
 export default function PlayerPage({ username }) {
-  const [gameState, setGameState] = useState("waiting");
+  const [gameState, setGameState] = useState("questionStart");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [submittedAnswer, setSubmittedAnswer] = useState("");
@@ -62,7 +63,7 @@ export default function PlayerPage({ username }) {
   //   socket.current.onmessage = (event) => {
   //     const data = event.data.toString();
   //     if (data === "start") {
-  //       setGameState("playing");
+  //       setGameState("questionStart");
   //       setTimeLeft(mockQuestions[currentQuestionIndex].time);
   //     } else if (data === "hint") {
   //       setHints((prev) => [...prev, data]);
@@ -102,131 +103,97 @@ export default function PlayerPage({ username }) {
   //   return () => clearInterval(checkSocketConnection);
   // }, [gameState]);
 
-  // Mock timer countdown
-  useEffect(() => {
-    let timer;
-
-    if (gameState === "playing" && timeLeft > 0) {
-      timer = setTimeout(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (gameState === "playing" && timeLeft === 0) {
-      // Time's up, show results
-      // showResults();
-    }
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [gameState, timeLeft]);
-
-  const submitAnswer = (answer) => {
-    setSubmittedAnswer(answer);
-  };
-
-  const showResults = () => {
-    setGameState("showingResults");
-
-    // Check if answer is correct
-    const isAnswerCorrect =
-      submittedAnswer === mockQuestions[currentQuestionIndex].correctAnswer;
-    setIsCorrect(isAnswerCorrect);
-
-    // Update score if correct
-    if (isAnswerCorrect) {
-      setScore((prev) => prev + 10);
-    }
-
-    // Simulate moving to next question after 5 seconds
-    setTimeout(() => {
-      if (currentQuestionIndex < mockQuestions.length - 1) {
-        nextQuestion();
-      } else {
-        endRound();
-      }
-    }, 5000);
-  };
-
-  const nextQuestion = () => {
-    setCurrentQuestionIndex((prev) => prev + 1);
-    setSubmittedAnswer("");
-    setGameState("waiting");
-    setTimeLeft(30);
-    setHints([]);
-    setIsCorrect(null);
-  };
-
-  const endRound = () => {
-    setGameState("roundEnd");
-
-    // Simulate moving to next round after 5 seconds
-    setTimeout(() => {
-      if (currentRoundIndex < 2) {
-        //TODO Mock 3 rounds
-        nextRound();
-      } else {
-        endGame();
-      }
-    }, 5000);
-  };
-
-  const nextRound = () => {
-    setCurrentRoundIndex((prev) => prev + 1);
-    setCurrentQuestionIndex(0);
-    setSubmittedAnswer(null);
-    setGameState("waiting");
-    setTimeLeft(30);
-    setHints([]);
-    setIsCorrect(null);
-  };
-
-  const endGame = () => {
-    setGameState("gameEnd");
-  };
-
   return (
     <>
-      <div className="flex h-[calc(100vh*3/4)] flex-col p-4 bg-gradient-to-b from-blue-50 to-blue-100">
-        <div className="container mx-auto">
-          <CardHeader>
-            <div className="flex justify-between items-center">
+      {gameState === "waiting" && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+          <p className="text-muted-foreground">
+            Waiting for the host to start the game...
+          </p>
+        </div>
+      )}
+      {gameState === "questionEnd" && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+          <p className="text-muted-foreground">
+            The question has ended. Waiting for the host to show leaderboard...
+          </p>
+        </div>
+      )}
+      {gameState === "showResults" && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Card>
+            <CardHeader>
               <CardTitle className="text-xl font-bold text-blue-600">
-                Quiz Game
+                Leaderboard
               </CardTitle>
-              <div className="flex">
-                <div className="bg-blue-100 px-3 py-1 rounded-full text-xl">
-                  {username} - {score} points
-                </div>
-                {timeLeft > 0 && gameState === "playing" && (
-                  <Timer seconds={timeLeft} onTimeout={() => setTimeLeft(0)} />
-                )}
-              </div>
-            </div>
-            <CardDescription>
-              {gameState === "waiting"
-                ? "Waiting for host to start the game"
-                : gameState === "playing"
-                ? `Round ${currentRoundIndex + 1}, Question ${
-                    currentQuestionIndex + 1
-                  }`
-                : gameState === "showingResults"
-                ? "Results"
-                : gameState === "roundEnd"
-                ? `End of Round ${currentRoundIndex + 1}`
-                : "Game Finished"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* {gameState === "waiting" && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-              <p className="text-muted-foreground">
-                Waiting for the host to start the game...
-              </p>
-            </div>
-          )}
 
-          {gameState === "playing" &&
+              <CardDescription>Round 1, question 1</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Leaderboard players={mockPlayers}></Leaderboard>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {gameState === "showRoundResults" && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-blue-600">
+                Leaderboard
+              </CardTitle>
+
+              <CardDescription>Round 1</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Leaderboard players={mockPlayers}></Leaderboard>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {gameState === "questionStart" && (
+        <>
+          <div className="flex h-[calc(100vh*3/4)] flex-col p-4 bg-gradient-to-b from-blue-50 to-blue-100">
+            <div className="container mx-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-bold text-blue-600">
+                    Quiz Game
+                  </CardTitle>
+                  <div className="flex">
+                    <div className="bg-blue-100 px-3 py-1 rounded-full text-xl">
+                      {username} - {score} points
+                    </div>
+                    <Timer
+                      seconds={timeLeft}
+                      onTimeout={() => {
+                        setTimeLeft(0);
+                        setGameState("questionEnd");
+                      }}
+                    />
+                  </div>
+                </div>
+                <CardDescription>
+                  {gameState === "waiting"
+                    ? "Waiting for host to start the game"
+                    : gameState === "questionStart"
+                    ? `Round ${currentRoundIndex + 1}, Question ${
+                        currentQuestionIndex + 1
+                      }`
+                    : gameState === "showingResults"
+                    ? "Results"
+                    : gameState === "roundEnd"
+                    ? `End of Round ${currentRoundIndex + 1}`
+                    : "Game Finished"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6"></CardContent>
+
+              {/* 
+
+          {gameState === "questionStart" &&
             currentQuestionIndex < mockQuestions.length && (
               <div className="space-y-6">
                 <div className="text-center font-semibold">
@@ -322,18 +289,20 @@ export default function PlayerPage({ username }) {
               <Button className="w-full">Back to Home (TODO)</Button>
             </div>
           )} */}
-          </CardContent>
-        </div>
-      </div>
-      <div className="h-[calc(100vh*1/4)] flex items-center justify-center">
-        {/* <AnswerShortPhrase
-          answerLengthHint={mockQuestions[0].correctAnswer.length}
-        /> */}
-        <AnswerShortPhrase
+            </div>
+          </div>
+          <div className="h-[calc(100vh*1/4)] flex items-center justify-center">
+            <AnswerMultipleChoice
+              options={mockQuestions[0].options}
+              onSubmit={() => setGameState("questionStart")}
+            />
+            {/* <AnswerShortPhrase
           hint={mockQuestions[0].correctAnswer.length + " characters"}
-          onSubmit={() => setGameState("playing")}
-        />
-      </div>
+          onSubmit={() => setGameState("questionStart")}
+        /> */}
+          </div>
+        </>
+      )}
     </>
   );
 }

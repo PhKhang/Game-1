@@ -27,7 +27,7 @@ const mockQuestions = {
           '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
         time: 20,
         options: ["London", "Berlin", "Paris", "Madrid"],
-        correctAnswer: "Paris",
+        answer: "Paris",
         hints: [
           "It's in Western Europe",
           "It's known for a famous tower",
@@ -42,7 +42,7 @@ const mockQuestions = {
           '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
         time: 20,
         options: ["London", "Berlin", "Paris", "Madrid"],
-        correctAnswer: "Paris",
+        answer: "Paris",
         hints: [
           "It's in Western Europe",
           "It's known for a famous tower",
@@ -60,7 +60,7 @@ const mockQuestions = {
           '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
         time: 20,
         options: ["London", "Berlin", "Paris", "Madrid"],
-        correctAnswer: "Paris",
+        answer: "Paris",
         hints: [
           "It's in Western Europe",
           "It's known for a famous tower",
@@ -75,7 +75,7 @@ const mockQuestions = {
           '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
         time: 20,
         options: ["London", "Berlin", "Paris", "Madrid"],
-        correctAnswer: "Paris",
+        answer: "Paris",
         hints: [
           "It's in Western Europe",
           "It's known for a famous tower",
@@ -328,7 +328,7 @@ export default function HostPage() {
                   Reset
                 </Button>
 
-                {gameState !== "waiting" ? (
+                {gameState !== "waiting" ? ( // Question control when the game starts
                   <QuestionControl
                     key={currentQuestionIndex}
                     question={

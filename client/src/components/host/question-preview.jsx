@@ -60,7 +60,7 @@ export default function QuestionPreview({ question }) {
         <Button
           className="bg-green-600 hover:bg-green-700 m-1"
           onClick={() => {
-            setPreviewContent(question.correctAnswer);
+            setPreviewContent(question.answer);
           }}
         >
           Answer

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Timer = ({ seconds, onTimeout }) => {
-  const [currSeconds, setCurrSeconds] = useState(seconds);
+const Timer = ({ seconds, onTimeout, ...props }) => {
+  const [currSeconds, setCurrSeconds] = useState(seconds + 1);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -26,8 +26,8 @@ const Timer = ({ seconds, onTimeout }) => {
   };
 
   return (
-    <div className="text-center space-y-4">
-      <h2 className="text-4xl font-bold">{formatTime(currSeconds)}</h2>
+    <div {...props} className="text-center space-y-4">
+      <h2 className="text-4xl font-bold">{formatTime(currSeconds - 1)}</h2>
     </div>
   );
 };
