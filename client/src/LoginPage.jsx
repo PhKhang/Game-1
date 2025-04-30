@@ -32,9 +32,9 @@ export default function LoginPage({ onLogin }) {
     onLogin(password, loginRole);
 
     // Allow login after 1 second to prevent spamming
-    // setTimeout(() => {
-    //   setIsLoading(false);
-    // }, 1000);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (

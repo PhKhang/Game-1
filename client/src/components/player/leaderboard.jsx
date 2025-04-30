@@ -31,7 +31,7 @@ export default function Leaderboard({ players }) {
                       index + 1
                     )}
                   </div>
-                  <div className="font-medium">{player.name}</div>
+                  <div className="font-medium">{player.username}</div>
                 </div>
                 <div className="font-semibold">{player.score} pts</div>
               </Card>

@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeClosed, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 
-export default function Player({ id, name, password }) {
+export default function Player({ id, username, password }) {
   const [showPassword, setShowPassword] = useState(false);
   const [copyState, setCopyState] = useState(false);
 
@@ -18,12 +19,13 @@ export default function Player({ id, name, password }) {
     navigator.clipboard.writeText(password);
     setCopyState(true);
     setTimeout(() => setCopyState(false), 1000);
+    toast.info("Copied to clipboard");
   };
 
   return (
     <Card key={id}>
       <CardHeader>
-        <CardTitle className="text-blue-600">{name}</CardTitle>
+        <CardTitle className="text-blue-600">{username}</CardTitle>
       </CardHeader>
       <CardContent>
         <span className="pr-2">Password:</span>

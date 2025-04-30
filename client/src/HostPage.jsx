@@ -16,86 +16,6 @@ import QuestionPreview from "@/components/host/question-preview";
 import QuestionControl from "./components/host/question-control";
 import { toast } from "sonner";
 
-const mockQuestions = {
-  rounds: [
-    // Round 1
-    [
-      {
-        id: 1,
-        type: "multiple-choice",
-        content:
-          '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        answer: "Paris",
-        hints: [
-          "It's in Western Europe",
-          "It's known for a famous tower",
-          "It's on the Seine River",
-          "It starts with 'P'",
-        ],
-      },
-      {
-        id: 2,
-        type: "short-phrase",
-        content:
-          '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        answer: "Paris",
-        hints: [
-          "It's in Western Europe",
-          "It's known for a famous tower",
-          "It's on the Seine River",
-          "It starts with 'P'",
-        ],
-      },
-    ],
-    // Round 2
-    [
-      {
-        id: 1,
-        type: "multiple-choice",
-        content:
-          '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        answer: "Paris",
-        hints: [
-          "It's in Western Europe",
-          "It's known for a famous tower",
-          "It's on the Seine River",
-          "It starts with 'P'",
-        ],
-      },
-      {
-        id: 2,
-        type: "short-phrase",
-        content:
-          '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        answer: "Paris",
-        hints: [
-          "It's in Western Europe",
-          "It's known for a famous tower",
-          "It's on the Seine River",
-          "It starts with 'P'",
-        ],
-      },
-    ],
-  ],
-};
-
-const playerData = {
-  players: [
-    { id: 1, name: "A", password: "123", score: 10 },
-    { id: 2, name: "B", password: "456", score: 20 },
-    { id: 3, name: "C", password: "789", score: 30 },
-    { id: 4, name: "D", password: "abc", score: 40 },
-  ],
-};
-
 const PlayerStateBadge = ({ state }) => {
   let badgeClassnames = "font-bold ml-4 ";
   if (state === "Disconnected") badgeClassnames += "bg-red-500";
@@ -105,7 +25,7 @@ const PlayerStateBadge = ({ state }) => {
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
 
-export default function HostPage() {
+export default function HostPage({ players, questions }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -116,65 +36,13 @@ export default function HostPage() {
     "Waiting",
     "Answered",
   ]);
-  // const [players, setPlayers] = useState(mockPlayers);
-
-  // const socket = useRef(null);
-  // useEffect(() => {
-  //   socket.current = new WebSocket("ws://localhost:3000"); // Replace with your server URL
-
-  //   // Handle socket connection
-  //   socket.current.onopen = (event) => {
-  //     socket.current.send("hello");
-  //     console.log("websocket connection opened");
-  //   };
-
-  //   // Handle incoming messages
-  //   socket.current.onmessage = (event) => {
-  //     const data = event.data.toString();
-  //     console.log(data);
-  //   };
-
-  //   // Handle socket close
-  //   socket.current.onclose = () => {
-  //     console.log("WebSocket connection closed");
-  //   };
-
-  //   return () => {
-  //     // Clean up on unmount
-  //     socket.current.close();
-  //   };
-  // }, []);
-
-  // const fetchPlayersData = async () => {
-  //   try {
-  //     const response = await fetch("/data/players", {
-  //       headers: {
-
-  //         password: `Bearer dataPassword`,
-  //       },
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error("Failed to fetch players data");
-  //     }
-
-  //     const data = await response.json();
-  //     console.log("Players data:", data);
-  //     // Process the data as needed
-  //   } catch (error) {
-  //     console.error("Error fetching players data:", error);
-  //   }
-  // };
 
   const nextQuestion = () => {
-    if (
-      currentQuestionIndex <
-      mockQuestions.rounds[currentRoundIndex].length - 1
-    ) {
+    if (currentQuestionIndex < questions[currentRoundIndex].length - 1) {
       // Go to next question
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setGameState("questionStart");
-    } else if (currentRoundIndex < mockQuestions.rounds.length - 1) {
+    } else if (currentRoundIndex < questions.length - 1) {
       // Go to next round
       setCurrentRoundIndex(currentRoundIndex + 1);
       setCurrentQuestionIndex(0);
@@ -202,13 +70,11 @@ export default function HostPage() {
                   : gameState === "questionStart"
                   ? `Round ${currentRoundIndex + 1}, Question ${
                       currentQuestionIndex + 1
-                    } of ${mockQuestions.rounds[currentRoundIndex].length}`
+                    } of ${questions[currentRoundIndex].length}`
                   : gameState === "questionEnd"
                   ? `Round ${currentRoundIndex + 1}, Question ${
                       currentQuestionIndex + 1
-                    } of ${
-                      mockQuestions.rounds[currentRoundIndex].length
-                    } finished`
+                    } of ${questions[currentRoundIndex].length} finished`
                   : gameState === "showResults"
                   ? "Showing results"
                   : gameState === "showRoundResults"
@@ -232,14 +98,14 @@ export default function HostPage() {
               <TabsContent value="game" className="space-y-4 mt-4">
                 <p className="text-xl font-bold text-blue-600">Players</p>
                 <div className="w-full grid grid-cols-4 gap-4">
-                  {playerData.players.map((player, index) => {
+                  {players.map((player, index) => {
                     return (
                       <Card key={index}>
                         <CardHeader className="w-full">
                           <div className="flex justify-between items-center">
                             <CardTitle>
                               <div className="flex justify-between items-center text-xl font-bold text-blue-600">
-                                {player.name}
+                                {player.username}
                                 <PlayerStateBadge state={playerStates[index]} />
                               </div>
                             </CardTitle>
@@ -285,7 +151,7 @@ export default function HostPage() {
                   disabled={
                     gameState !== "showResults" ||
                     currentQuestionIndex <
-                      mockQuestions.rounds[currentRoundIndex].length - 1
+                      questions[currentRoundIndex].length - 1
                   }
                 >
                   Show round results
@@ -306,7 +172,7 @@ export default function HostPage() {
                     gameState !== "showRoundResults" &&
                     (gameState !== "showResults" ||
                       currentQuestionIndex >=
-                        mockQuestions.rounds[currentRoundIndex].length - 1)
+                        questions[currentRoundIndex].length - 1)
                   }
                 >
                   Next question
@@ -332,9 +198,7 @@ export default function HostPage() {
                   <QuestionControl
                     key={currentQuestionIndex}
                     question={
-                      mockQuestions.rounds[currentRoundIndex][
-                        currentQuestionIndex
-                      ]
+                      questions[currentRoundIndex][currentQuestionIndex]
                     }
                     onFinish={() => {
                       setGameState("questionEnd");
@@ -347,9 +211,9 @@ export default function HostPage() {
 
               <TabsContent value="question" className="mt-4">
                 <div className="space-y-4">
-                  {mockQuestions.rounds.map((round, index) => {
+                  {questions.map((round, index) => {
                     return (
-                      <>
+                      <div key={index}>
                         <h1 className="font-semibold text-2xl">
                           Round {index + 1}
                         </h1>
@@ -362,7 +226,7 @@ export default function HostPage() {
                             />
                           );
                         })}
-                      </>
+                      </div>
                     );
                   })}
                 </div>
@@ -370,11 +234,11 @@ export default function HostPage() {
 
               <TabsContent value="players" className="mt-4">
                 <div className="flex flex-col gap-2">
-                  {playerData.players.map((player) => {
+                  {players.map((player) => {
                     return (
                       <Player
                         id={player.id}
-                        name={player.name}
+                        username={player.username}
                         password={player.password}
                       ></Player>
                     );

@@ -49,38 +49,6 @@ export default function PlayerPage({ username }) {
   const [hints, setHints] = useState([]);
   const [isCorrect, setIsCorrect] = useState(null);
 
-  // const socket = useRef(null);
-  // useEffect(() => {
-  //   socket.current = new WebSocket("ws://localhost:3000"); // Replace with your server URL
-
-  //   // Handle socket connection
-  //   socket.current.onopen = (event) => {
-  //     socket.current.send("hello");
-  //     console.log("websocket connection opened");
-  //   };
-
-  //   // Handle incoming messages
-  //   socket.current.onmessage = (event) => {
-  //     const data = event.data.toString();
-  //     if (data === "start") {
-  //       setGameState("questionStart");
-  //       setTimeLeft(mockQuestions[currentQuestionIndex].time);
-  //     } else if (data === "hint") {
-  //       setHints((prev) => [...prev, data]);
-  //     }
-  //   };
-
-  //   // Handle socket close
-  //   socket.current.onclose = () => {
-  //     console.log("WebSocket connection closed");
-  //   };
-
-  //   return () => {
-  //     // Clean up on unmount
-  //     socket.current.close();
-  //   };
-  // }, []);
-
   //TODO   const submitAnswer = (answer) => {
   //     setSelectedAnswer(answer);
   //     socket.send(JSON.stringify({ type: "submitAnswer", answer }));
