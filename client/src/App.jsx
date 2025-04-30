@@ -7,88 +7,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import Leaderboard from "@/components/player/leaderboard";
 
-const mockPlayers = {
-  players: [
-    { id: 1, username: "A", password: "123", score: 10 },
-    { id: 2, username: "B", password: "456", score: 20 },
-    { id: 3, username: "C", password: "789", score: 30 },
-    { id: 4, username: "D", password: "abc", score: 40 },
-  ],
-};
-
-const mockQuestions = {
-  rounds: [
-    // Round 1
-    [
-      {
-        id: 1,
-        type: "multiple-choice",
-        content:
-          '<p>What is the <strong>capital</strong> of England?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        answer: "Paris",
-        hints: [
-          "It's in Western Europe",
-          "It's known for a famous tower",
-          "It's on the Seine River",
-          "It starts with 'P'",
-        ],
-      },
-      {
-        id: 2,
-        type: "short-phrase",
-        content:
-          '<p>What is the chemical symbol for gold?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        answer: "Au",
-        hints: [
-          "Its atomic number is 79.",
-          "Used in jewelry and electronics.",
-          "It's a precious yellow metal.",
-          'The symbol comes from the Latin word "Aurum."',
-        ],
-      },
-    ],
-    // Round 2
-    [
-      {
-        id: 3,
-        type: "multiple-choice",
-        content: "<p>Who painted the ceiling of the Sistine Chapel?</p>",
-        time: 20,
-        options: [
-          "Leonardo da Vinci",
-          "Vincent van Gogh",
-          "Michelangelo",
-          "Raphael",
-        ],
-        answer: "Michelangelo",
-        hints: [
-          "He was also a sculptor, not just a painter.",
-          'He created the famous "David" statue.',
-          "He worked during the Renaissance period.",
-          "The project took about four years to complete.",
-        ],
-      },
-      {
-        id: 4,
-        type: "short-phrase",
-        content:
-          '<p>Which planet is known as the "Red Planet"?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
-        time: 20,
-        answer: "Mars",
-        hints: [
-          "It's the fourth planet from the Sun.",
-          "Has the tallest volcano in the solar system.",
-          "Its color is due to iron oxide (rust) on the surface.",
-          "NASA has sent multiple rovers there.",
-        ],
-      },
-    ],
-  ],
-};
-
 function App() {
   const [page, setPage] = useState("login-page");
   const [username, setUsername] = useState("");
@@ -119,6 +37,7 @@ function App() {
   }, []);
 
   const handleLogin = async (password, role) => {
+    // Send request
     socket.current.send(
       JSON.stringify({
         type: "validation",
@@ -126,7 +45,8 @@ function App() {
         password: password,
       })
     );
-    const validation = await new Promise((resolve) => {
+    // Wait for response
+    const validation = await new Promise((resolve, reject) => {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === "validation-response") {
@@ -134,9 +54,16 @@ function App() {
           resolve(data);
         }
       };
+
+      setTimeout(() => {
+        socket.current.removeEventListener("message", handleMessage);
+        reject(new Error("Validation response timeout"));
+      }, 5000); // 5 seconds timeout
+
       socket.current.addEventListener("message", handleMessage);
     });
 
+    // Process response
     try {
       // Server responded
       console.log(validation);
@@ -162,29 +89,25 @@ function App() {
   if (page === "login-page") {
     return (
       <>
-        <LoginPage onLogin={handleLogin} />
+        <LoginPage onLogin={handleLogin} socket={socket} />
         <Toaster />
       </>
     );
   } else if (page === "host-page") {
     return (
       <>
-        <HostPage players={hostPlayers} questions={hostQuestions} />
+        <HostPage
+          players={hostPlayers}
+          questions={hostQuestions}
+          socket={socket}
+        />
         <Toaster />
       </>
     );
   } else if (page === "player-page") {
-    return <PlayerPage username={username} />;
+    return <PlayerPage username={username} socket={socket} />;
   }
   return <div>404</div>;
-  // return (
-  //   <>
-  //     <HostPage /> <Toaster richColors />
-  //   </>
-  // );
-  // return <Leaderboard players={playerData.players} />;
-  // return <PlayerPage username="ABC" />;
-  // return <QuestionPreview question={mockQuestions[0]} />;
 }
 
 export default App;

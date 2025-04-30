@@ -39,8 +39,8 @@ const mockQuestions = [
   },
 ];
 
-export default function PlayerPage({ username }) {
-  const [gameState, setGameState] = useState("questionStart");
+export default function PlayerPage({ username, socket }) {
+  const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [submittedAnswer, setSubmittedAnswer] = useState("");

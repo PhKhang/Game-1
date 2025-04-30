@@ -25,7 +25,7 @@ const PlayerStateBadge = ({ state }) => {
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
 
-export default function HostPage({ players, questions }) {
+export default function HostPage({ players, questions, socket }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);

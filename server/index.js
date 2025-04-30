@@ -106,6 +106,28 @@ const mockQuestions = [
 wss.on("connection", (ws) => {
   console.log("WebSocket connection opened");
 
+  // Rooms for players, host, and stage
+  ws.rooms = {
+    playerRoom: [],
+    hostRoom: [],
+    stageRoom: [],
+  };
+
+  ws.on("join-room", (data) => {
+    if (data.room === "playerRoom") {
+      ws.rooms.playerRoom.push(ws);
+      console.log("Player joined the player room");
+    } else if (data.room === "hostRoom") {
+      ws.rooms.hostRoom.push(ws);
+      console.log("Host joined the host room");
+    } else if (data.room === "stageRoom") {
+      ws.rooms.stageRoom.push(ws);
+      console.log("Stage joined the stage room");
+    } else {
+      console.log("Invalid room specified");
+    }
+  });
+
   ws.on("message", (message) => {
     const data = JSON.parse(message);
     console.log("Received:", data);
@@ -118,6 +140,9 @@ wss.on("connection", (ws) => {
         if (player) {
           response.username = player.username;
           response.status = "success";
+          ws.id = player.id;
+          ws.rooms.playerRoom.push(ws); // Join player room
+          console.log(`Player id ${player.id} joined the player room`);
         } else {
           response.status = "invalid password";
         }
@@ -126,12 +151,18 @@ wss.on("connection", (ws) => {
           response.status = "success";
           response.players = mockPlayerData; // Players' usernames, scores and passwords
           response.questions = mockQuestions; // Questions' type, content, time, answer and hints
+          ws.id = 1000; // Host id
+          ws.rooms.hostRoom.push(ws); // Join host room
+          console.log("Host joined the host room");
         } else {
           response.status = "invalid password";
         }
       } else if (data.loginRole === "stage") {
         if (mockCredentials.host.password === data.password) {
           response.status = "success";
+          ws.id = 1001; // Stage id
+          ws.rooms.stageRoom.push(ws); // Join stage room
+          console.log("Stage joined the stage room");
         } else {
           response.status = "invalid password";
         }
@@ -142,8 +173,28 @@ wss.on("connection", (ws) => {
     }
   });
 
-  ws.on("close", () => {
-    console.log("Websocket connection closed");
+  ws.on("close", (code, reason) => {
+    console.log("WebSocket connection closed");
+
+    // Remove the disconnected client from all rooms
+    if (ws.rooms) {
+      if (ws.rooms.playerRoom.includes(ws)) {
+        ws.rooms.playerRoom = ws.rooms.playerRoom.filter(
+          (client) => client !== ws
+        );
+        console.log(`Player id ${ws.id} left player room`);
+      }
+      if (ws.rooms.hostRoom.includes(ws)) {
+        ws.rooms.hostRoom = ws.rooms.hostRoom.filter((client) => client !== ws);
+        console.log("Host left host room");
+      }
+      if (ws.rooms.stageRoom.includes(ws)) {
+        ws.rooms.stageRoom = ws.rooms.stageRoom.filter(
+          (client) => client !== ws
+        );
+        console.log("Stage left stage room");
+      }
+    }
   });
 });
 
