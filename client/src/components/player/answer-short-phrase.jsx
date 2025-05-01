@@ -8,7 +8,7 @@ const AnswerShortPhrase = ({ hint, onSubmit }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSubmit();
+    if (onSubmit) onSubmit();
     //TODO process answer
     console.log(answer);
     setAnswerSubmitted(true);

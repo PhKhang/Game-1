@@ -28,7 +28,6 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setIsLoading(true);
 
-    //TODO password and loginRole validation
     onLogin(password, loginRole);
 
     // Allow login after 1 second to prevent spamming

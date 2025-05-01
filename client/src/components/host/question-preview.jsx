@@ -11,7 +11,7 @@ import {
 import PreviewIFrame from "@/components/host/preview-iframe";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import PreviewDiv from "./preview-div";
+import PreviewDiv from "../preview-div";
 
 export default function QuestionPreview({ question }) {
   // The content for preview (question, hints or answer)

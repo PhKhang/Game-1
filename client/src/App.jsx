@@ -40,7 +40,7 @@ function App() {
     // Send request
     socket.current.send(
       JSON.stringify({
-        type: "validation",
+        type: "login",
         loginRole: role,
         password: password,
       })
@@ -49,7 +49,7 @@ function App() {
     const validation = await new Promise((resolve, reject) => {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "validation-response") {
+        if (data.type === "login-response") {
           socket.current.removeEventListener("message", handleMessage);
           resolve(data);
         }
@@ -57,7 +57,7 @@ function App() {
 
       setTimeout(() => {
         socket.current.removeEventListener("message", handleMessage);
-        reject(new Error("Validation response timeout"));
+        reject(new Error("Login response timeout"));
       }, 5000); // 5 seconds timeout
 
       socket.current.addEventListener("message", handleMessage);

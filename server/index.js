@@ -111,6 +111,9 @@ let rooms = {
   stageRoom: [],
 };
 
+let roundIndex = 0;
+let questionIndex = 0;
+
 // WebSocket logic
 wss.on("connection", (ws) => {
   console.log("WebSocket connection opened");
@@ -118,25 +121,35 @@ wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     const data = JSON.parse(message);
     console.log("Received:", data);
-    if (data.type === "validation") {
-      let response = { type: "validation-response" };
+    if (data.type === "login") {
+      // Password validation
+      let response = { type: "login-response" };
       if (data.loginRole === "player") {
-        let player = mockCredentials.players.find(
+        let playerCred = mockCredentials.players.find(
           (p) => p.password === data.password
         );
-        if (player) {
-          response.username = player.username;
-          response.status = "success";
-          ws.id = player.id;
-          rooms.playerRoom.push(ws); // Join player room
-          player.isConnected = true;
-          if (rooms.hostRoom[0])
-            rooms.hostRoom[0].send(
-              JSON.stringify({ type: "connect-player", playerId: ws.id })
+        if (playerCred) {
+          let player = mockPlayerData.find((p) => p.id === playerCred.id);
+          if (player) {
+            response.username = player.username;
+            response.status = "success";
+            ws.id = player.id;
+            rooms.playerRoom.push(ws); // Join player room
+            player.isConnected = true;
+            if (rooms.hostRoom[0])
+              rooms.hostRoom[0].send(
+                JSON.stringify({ type: "connect-player", playerId: ws.id })
+              );
+            console.log(
+              `Login success. Player id ${player.id} joined the player room`
             );
-          console.log(`Player id ${player.id} joined the player room`);
+          } else {
+            response.status = "invalid password";
+            console.log("Login failed");
+          }
         } else {
           response.status = "invalid password";
+          console.log("Login failed");
         }
       } else if (data.loginRole === "host") {
         if (mockCredentials.host.password === data.password) {
@@ -145,23 +158,43 @@ wss.on("connection", (ws) => {
           response.questions = mockQuestions; // Questions' type, content, time, answer and hints
           ws.id = 1000; // Host id
           rooms.hostRoom.push(ws); // Join host room
-          console.log("Host joined the host room");
+          console.log("Login success. Host joined the host room");
         } else {
           response.status = "invalid password";
+          console.log("Login failed");
         }
       } else if (data.loginRole === "stage") {
         if (mockCredentials.host.password === data.password) {
           response.status = "success";
           ws.id = 1001; // Stage id
           rooms.stageRoom.push(ws); // Join stage room
-          console.log("Stage joined the stage room");
+          console.log("Login success. Stage joined the stage room");
         } else {
           response.status = "invalid password";
+          console.log("Login failed");
         }
       } else {
         response.status = "role not found";
       }
       ws.send(JSON.stringify(response));
+    } else if (data.type === "host-start-question") {
+      rooms.playerRoom.forEach((socket) => {
+        // Send question for each players
+        socket.send(
+          JSON.stringify({
+            type: "start-question",
+            roundIndex: data.roundIndex,
+            questionIndex: data.questionIndex,
+            question: mockQuestions[data.roundIndex][data.questionIndex],
+          })
+        );
+      });
+    } else if (data.type === "host-hint") {
+      rooms.playerRoom.forEach((socket) => {
+        data.type = "hint";
+        // Send hint for each players
+        socket.send(JSON.stringify({ type: "hint", hint: data.hint }));
+      });
     }
   });
 

@@ -30,7 +30,12 @@ export default function HostPage({ players, questions, socket }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("game");
   const [playerStates, setPlayerStates] = useState(
-    Object.fromEntries(players.map((player) => [player.id, "Disconnected"]))
+    Object.fromEntries(
+      players.map((player) => [
+        player.id,
+        player.isConnected ? "Connected" : "Disconnected",
+      ])
+    )
   );
 
   useEffect(() => {
@@ -43,7 +48,7 @@ export default function HostPage({ players, questions, socket }) {
           ).isConnected = true;
           setPlayerStates((prevStates) => ({
             ...prevStates,
-            [data.playerId]: gameState === "Connected",
+            [data.playerId]: "Connected",
           }));
         } else if (data.type === "disconnect-player") {
           players.find(
@@ -65,20 +70,22 @@ export default function HostPage({ players, questions, socket }) {
     }
   }, [socket, gameState, players]);
 
-  const nextQuestion = () => {
-    if (currentQuestionIndex < questions[currentRoundIndex].length - 1) {
-      // Go to next question
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setGameState("questionStart");
-    } else if (currentRoundIndex < questions.length - 1) {
-      // Go to next round
-      setCurrentRoundIndex(currentRoundIndex + 1);
-      setCurrentQuestionIndex(0);
-      setGameState("questionStart");
-    } else {
+  const nextQuestion = (handler) => {
+    let nextQuestionIndex = currentQuestionIndex + 1;
+    let nextRoundIndex = currentRoundIndex;
+    if (nextQuestionIndex >= questions[currentRoundIndex].length) {
+      nextQuestionIndex = 0;
+      nextRoundIndex += 1;
+    }
+    if (nextRoundIndex >= questions.length) {
       // Game end
       setGameState("gameFinished");
+      return;
     }
+    if (handler) handler(nextQuestionIndex, nextRoundIndex);
+    setCurrentQuestionIndex(nextQuestionIndex);
+    setCurrentRoundIndex(nextRoundIndex);
+    setGameState("questionStart");
   };
 
   return (
@@ -150,13 +157,14 @@ export default function HostPage({ players, questions, socket }) {
                 <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
-                    setPlayerStates(
-                      playerStates.map((state) => {
-                        if (state === "Disconnected") return state;
-                        return "Waiting";
+                    setGameState("questionStart");
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "host-start-question",
+                        roundIndex: currentRoundIndex,
+                        questionIndex: currentQuestionIndex,
                       })
                     );
-                    setGameState("questionStart");
                   }}
                   disabled={gameState !== "waiting"}
                 >
@@ -189,14 +197,16 @@ export default function HostPage({ players, questions, socket }) {
                 <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
-                    setPlayerStates(
-                      playerStates.map((state) => {
-                        if (state === "Disconnected") return state;
-                        return "Waiting";
-                      })
-                    );
                     setGameState("questionStart");
-                    nextQuestion();
+                    nextQuestion((questionIndex, roundIndex) => {
+                      socket.current.send(
+                        JSON.stringify({
+                          type: "host-start-question",
+                          roundIndex: roundIndex,
+                          questionIndex: questionIndex,
+                        })
+                      );
+                    });
                   }}
                   disabled={
                     gameState !== "showRoundResults" &&
@@ -210,12 +220,6 @@ export default function HostPage({ players, questions, socket }) {
                 <Button
                   className="bg-red-600 hover:bg-red-700 font-bold m-1"
                   onClick={() => {
-                    setPlayerStates(
-                      playerStates.map((state) => {
-                        if (state === "Disconnected") return state;
-                        return "Connected";
-                      })
-                    );
                     setGameState("waiting");
                     setCurrentQuestionIndex(0);
                     setCurrentRoundIndex(0);
@@ -233,6 +237,7 @@ export default function HostPage({ players, questions, socket }) {
                     onFinish={() => {
                       setGameState("questionEnd");
                     }}
+                    socket={socket}
                   />
                 ) : (
                   ""

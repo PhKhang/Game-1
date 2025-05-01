@@ -11,9 +11,9 @@ import {
 import PreviewIFrame from "@/components/host/preview-iframe";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import PreviewDiv from "./preview-div";
+import PreviewDiv from "../preview-div";
 
-export default function QuestionControl({ question, onFinish }) {
+export default function QuestionControl({ question, onFinish, socket }) {
   // The content for preview (question, hints or answer)
   const [content, setContent] = useState(question.content);
   const [finished, setFinished] = useState(false);
@@ -48,6 +48,9 @@ export default function QuestionControl({ question, onFinish }) {
             className="bg-blue-500 hover:bg-blue-600 m-1"
             onClick={() => {
               setContent(content + "<br/>" + hint);
+              socket.current.send(
+                JSON.stringify({ type: "host-hint", hint: "<br/>" + hint })
+              );
               setUsedHints(
                 usedHints.map((t, hintIndex) => {
                   if (hintIndex === index) return true;

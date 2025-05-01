@@ -10,10 +10,11 @@ import {
 import { Loader2, AlertCircle } from "lucide-react";
 // import { Leaderboard } from "@/components/leaderboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import AnswerMultipleChoice from "./components/player/answer-multiple-choice";
-import AnswerShortPhrase from "./components/player/answer-short-phrase";
-import Timer from "./components/player/timer";
-import Leaderboard from "./components/player/leaderboard";
+import AnswerMultipleChoice from "@/components/player/answer-multiple-choice";
+import AnswerShortPhrase from "@/components/player/answer-short-phrase";
+import Timer from "@/components/player/timer";
+import Leaderboard from "@/components/player/leaderboard";
+import PreviewDiv from "@/components/preview-div";
 
 // Mock data
 const mockPlayers = [
@@ -21,22 +22,6 @@ const mockPlayers = [
   { id: "2", name: "Player2", score: 20 },
   { id: "3", name: "Player3", score: 40 },
   { id: "4", name: "Player4", score: 10 },
-];
-
-const mockQuestions = [
-  {
-    id: 1,
-    text: "What is the capital of France?",
-    time: 20,
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: "Paris",
-    hints: [
-      "It's in Western Europe",
-      "It's known for a famous tower",
-      "It's on the Seine River",
-      "It starts with 'P'",
-    ],
-  },
 ];
 
 export default function PlayerPage({ username, socket }) {
@@ -47,7 +32,34 @@ export default function PlayerPage({ username, socket }) {
   const [timeLeft, setTimeLeft] = useState(30);
   const [score, setScore] = useState(0);
   const [hints, setHints] = useState([]);
-  const [isCorrect, setIsCorrect] = useState(null);
+  const question = useRef(null);
+  const [content, setContent] = useState("");
+
+  useEffect(() => {
+    if (socket.current) {
+      const handleMessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "start-question") {
+          question.current = data.question;
+          setContent(data.question.content);
+          setTimeLeft(data.question.time);
+          setCurrentRoundIndex(data.roundIndex);
+          setCurrentQuestionIndex(data.questionIndex);
+          setGameState("questionStart");
+        } else if (data.type === "hint") {
+          console.log("dumamay", data);
+          setContent((prev) => (prev += data.hint));
+        }
+      };
+
+      socket.current.addEventListener("message", handleMessage);
+
+      // Cleanup function
+      return () => {
+        socket.current.removeEventListener("message", handleMessage);
+      };
+    }
+  }, [socket]);
 
   //TODO   const submitAnswer = (answer) => {
   //     setSelectedAnswer(answer);
@@ -85,7 +97,7 @@ export default function PlayerPage({ username, socket }) {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
           <p className="text-muted-foreground">
-            The question has ended. Waiting for the host to show leaderboard...
+            The question has ended. Waiting for the host to show answer...
           </p>
         </div>
       )}
@@ -157,7 +169,9 @@ export default function PlayerPage({ username, socket }) {
                     : "Game Finished"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6"></CardContent>
+              <CardContent className="space-y-6">
+                <PreviewDiv htmlContent={content} />
+              </CardContent>
 
               {/* 
 
@@ -260,14 +274,21 @@ export default function PlayerPage({ username, socket }) {
             </div>
           </div>
           <div className="h-[calc(100vh*1/4)] flex items-center justify-center">
-            <AnswerMultipleChoice
-              options={mockQuestions[0].options}
-              onSubmit={() => setGameState("questionStart")}
-            />
-            {/* <AnswerShortPhrase
-          hint={mockQuestions[0].correctAnswer.length + " characters"}
-          onSubmit={() => setGameState("questionStart")}
-        /> */}
+            {question.current.type === "multiple-choice" ? (
+              <AnswerMultipleChoice
+                options={question.current.options}
+                onSubmit={() => {
+                  /**TODO */
+                }}
+              />
+            ) : (
+              <AnswerShortPhrase
+                hint={question.current.answer.length + " characters"}
+                onSubmit={() => {
+                  /**TODO */
+                }}
+              />
+            )}
           </div>
         </>
       )}
