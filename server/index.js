@@ -14,6 +14,7 @@ app.get("/", (req, res) => {
 });
 
 const mockCredentials = {
+  // Server only, do NOT send to client
   players: [
     { id: 1, username: "A", password: "123" },
     { id: 2, username: "B", password: "456" },
@@ -25,10 +26,11 @@ const mockCredentials = {
 };
 
 const mockPlayerData = [
-  { id: 1, username: "A", password: "123", score: 0 },
-  { id: 2, username: "B", password: "456", score: 0 },
-  { id: 3, username: "C", password: "789", score: 0 },
-  { id: 4, username: "D", password: "abc", score: 0 },
+  // Send to client
+  { id: 1, username: "A", password: "123", score: 0, isConnected: false },
+  { id: 2, username: "B", password: "456", score: 0, isConnected: false },
+  { id: 3, username: "C", password: "789", score: 0, isConnected: false },
+  { id: 4, username: "D", password: "abc", score: 0, isConnected: false },
 ];
 
 const mockQuestions = [
@@ -102,31 +104,16 @@ const mockQuestions = [
   ],
 ];
 
+// Rooms for players, host, and stage
+let rooms = {
+  playerRoom: [],
+  hostRoom: [],
+  stageRoom: [],
+};
+
 // WebSocket logic
 wss.on("connection", (ws) => {
   console.log("WebSocket connection opened");
-
-  // Rooms for players, host, and stage
-  ws.rooms = {
-    playerRoom: [],
-    hostRoom: [],
-    stageRoom: [],
-  };
-
-  ws.on("join-room", (data) => {
-    if (data.room === "playerRoom") {
-      ws.rooms.playerRoom.push(ws);
-      console.log("Player joined the player room");
-    } else if (data.room === "hostRoom") {
-      ws.rooms.hostRoom.push(ws);
-      console.log("Host joined the host room");
-    } else if (data.room === "stageRoom") {
-      ws.rooms.stageRoom.push(ws);
-      console.log("Stage joined the stage room");
-    } else {
-      console.log("Invalid room specified");
-    }
-  });
 
   ws.on("message", (message) => {
     const data = JSON.parse(message);
@@ -134,14 +121,19 @@ wss.on("connection", (ws) => {
     if (data.type === "validation") {
       let response = { type: "validation-response" };
       if (data.loginRole === "player") {
-        const player = mockCredentials.players.find(
+        let player = mockCredentials.players.find(
           (p) => p.password === data.password
         );
         if (player) {
           response.username = player.username;
           response.status = "success";
           ws.id = player.id;
-          ws.rooms.playerRoom.push(ws); // Join player room
+          rooms.playerRoom.push(ws); // Join player room
+          player.isConnected = true;
+          if (rooms.hostRoom[0])
+            rooms.hostRoom[0].send(
+              JSON.stringify({ type: "connect-player", playerId: ws.id })
+            );
           console.log(`Player id ${player.id} joined the player room`);
         } else {
           response.status = "invalid password";
@@ -152,7 +144,7 @@ wss.on("connection", (ws) => {
           response.players = mockPlayerData; // Players' usernames, scores and passwords
           response.questions = mockQuestions; // Questions' type, content, time, answer and hints
           ws.id = 1000; // Host id
-          ws.rooms.hostRoom.push(ws); // Join host room
+          rooms.hostRoom.push(ws); // Join host room
           console.log("Host joined the host room");
         } else {
           response.status = "invalid password";
@@ -161,7 +153,7 @@ wss.on("connection", (ws) => {
         if (mockCredentials.host.password === data.password) {
           response.status = "success";
           ws.id = 1001; // Stage id
-          ws.rooms.stageRoom.push(ws); // Join stage room
+          rooms.stageRoom.push(ws); // Join stage room
           console.log("Stage joined the stage room");
         } else {
           response.status = "invalid password";
@@ -177,21 +169,23 @@ wss.on("connection", (ws) => {
     console.log("WebSocket connection closed");
 
     // Remove the disconnected client from all rooms
-    if (ws.rooms) {
-      if (ws.rooms.playerRoom.includes(ws)) {
-        ws.rooms.playerRoom = ws.rooms.playerRoom.filter(
-          (client) => client !== ws
-        );
+    if (rooms) {
+      if (rooms.playerRoom.includes(ws)) {
+        rooms.playerRoom = rooms.playerRoom.filter((client) => client !== ws);
+        let player = mockPlayerData.find((p) => p.id === ws.id);
+        player.isConnected = false;
+        if (rooms.hostRoom[0])
+          rooms.hostRoom[0].send(
+            JSON.stringify({ type: "disconnect-player", playerId: ws.id })
+          );
         console.log(`Player id ${ws.id} left player room`);
       }
-      if (ws.rooms.hostRoom.includes(ws)) {
-        ws.rooms.hostRoom = ws.rooms.hostRoom.filter((client) => client !== ws);
+      if (rooms.hostRoom.includes(ws)) {
+        rooms.hostRoom = rooms.hostRoom.filter((client) => client !== ws);
         console.log("Host left host room");
       }
-      if (ws.rooms.stageRoom.includes(ws)) {
-        ws.rooms.stageRoom = ws.rooms.stageRoom.filter(
-          (client) => client !== ws
-        );
+      if (rooms.stageRoom.includes(ws)) {
+        rooms.stageRoom = rooms.stageRoom.filter((client) => client !== ws);
         console.log("Stage left stage room");
       }
     }

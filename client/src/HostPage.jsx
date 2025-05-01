@@ -19,8 +19,7 @@ import { toast } from "sonner";
 const PlayerStateBadge = ({ state }) => {
   let badgeClassnames = "font-bold ml-4 ";
   if (state === "Disconnected") badgeClassnames += "bg-red-500";
-  else if (state === "Connected" || state === "Answered")
-    badgeClassnames += "bg-green-500";
+  else if (state === "Connected") badgeClassnames += "bg-green-500";
   else badgeClassnames += "bg-gray-500";
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
@@ -30,12 +29,41 @@ export default function HostPage({ players, questions, socket }) {
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("game");
-  const [playerStates, setPlayerStates] = useState([
-    "Disconnected",
-    "Connected",
-    "Waiting",
-    "Answered",
-  ]);
+  const [playerStates, setPlayerStates] = useState(
+    Object.fromEntries(players.map((player) => [player.id, "Disconnected"]))
+  );
+
+  useEffect(() => {
+    if (socket.current) {
+      const handleMessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "connect-player") {
+          players.find(
+            (player) => player.id === data.playerId
+          ).isConnected = true;
+          setPlayerStates((prevStates) => ({
+            ...prevStates,
+            [data.playerId]: gameState === "Connected",
+          }));
+        } else if (data.type === "disconnect-player") {
+          players.find(
+            (player) => player.id === data.playerId
+          ).isConnected = false;
+          setPlayerStates((prevStates) => ({
+            ...prevStates,
+            [data.playerId]: "Disconnected",
+          }));
+        }
+      };
+
+      socket.current.addEventListener("message", handleMessage);
+
+      // Cleanup function
+      return () => {
+        socket.current.removeEventListener("message", handleMessage);
+      };
+    }
+  }, [socket, gameState, players]);
 
   const nextQuestion = () => {
     if (currentQuestionIndex < questions[currentRoundIndex].length - 1) {
@@ -106,7 +134,9 @@ export default function HostPage({ players, questions, socket }) {
                             <CardTitle>
                               <div className="flex justify-between items-center text-xl font-bold text-blue-600">
                                 {player.username}
-                                <PlayerStateBadge state={playerStates[index]} />
+                                <PlayerStateBadge
+                                  state={playerStates[player.id]}
+                                />
                               </div>
                             </CardTitle>
                           </div>
