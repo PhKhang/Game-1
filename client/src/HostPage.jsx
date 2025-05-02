@@ -39,7 +39,7 @@ export default function HostPage({ players, questions, socket }) {
   );
 
   useEffect(() => {
-    if (socket.current) {
+    if (socket && socket.current) {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === "connect-player") {

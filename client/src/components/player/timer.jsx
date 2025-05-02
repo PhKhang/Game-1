@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Timer = ({ seconds, onTimeout, ...props }) => {
+const Timer = ({ seconds, onTimeout }) => {
   const [currSeconds, setCurrSeconds] = useState(seconds + 1);
   const timeoutRef = useRef(null);
 
@@ -26,8 +26,8 @@ const Timer = ({ seconds, onTimeout, ...props }) => {
   };
 
   return (
-    <div {...props} className="text-center space-y-4">
-      <h2 className="text-4xl font-bold">{formatTime(currSeconds - 1)}</h2>
+    <div className="text-center space-y-4 w-18">
+      <h2>{formatTime(Math.max(0, currSeconds - 1))}</h2>
     </div>
   );
 };

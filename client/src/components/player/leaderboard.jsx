@@ -7,6 +7,7 @@ export default function Leaderboard({ players }) {
 
   return (
     <div className="space-y-3 w-3xl">
+      <h1 className="text-3xl font-bold text-blue-600">Leaderboard</h1>
       <div className="space-y-2">
         {sortedPlayers.length === 0 ? (
           <div className="text-center text-muted-foreground">

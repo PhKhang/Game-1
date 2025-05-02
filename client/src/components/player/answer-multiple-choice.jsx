@@ -31,7 +31,7 @@ const AnswerMultipleChoice = ({ options, onSubmit }) => {
                   key={index}
                   className={
                     optionSpan(options.length) +
-                    " bg-blue-500 hover:bg-blue-600 text-3xl text-white h-full"
+                    " bg-blue-500 hover:bg-blue-600 text-3xl text-white h-full rounded-2xl"
                   }
                   onClick={() => handleSubmit(option)}
                 >
@@ -46,7 +46,7 @@ const AnswerMultipleChoice = ({ options, onSubmit }) => {
                   className={
                     optionSpan(options.length) +
                     (option === answer ? " bg-blue-500" : " bg-gray-500") +
-                    " text-3xl text-white h-full"
+                    " text-3xl text-white h-full rounded-2xl"
                   }
                   disabled={answerSubmitted}
                 >
