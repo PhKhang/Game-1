@@ -174,7 +174,8 @@ export default function HostPage({ players, questions, socket }) {
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showResults");
-                    //TODO handle showing result/leaderboard
+                    //TODO handle showing round result/leaderboard
+                    //TODO socket.current.send(JSON.stringify({}))
                   }}
                   disabled={gameState !== "questionEnd"}
                 >
@@ -185,6 +186,7 @@ export default function HostPage({ players, questions, socket }) {
                   onClick={() => {
                     setGameState("showRoundResults");
                     //TODO handle showing round result/leaderboard
+                    //TODO socket.current.send(JSON.stringify({}))
                   }}
                   disabled={
                     gameState !== "showResults" ||

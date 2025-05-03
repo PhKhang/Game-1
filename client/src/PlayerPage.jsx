@@ -25,13 +25,11 @@ const mockPlayers = [
 ];
 
 export default function PlayerPage({ username, socket }) {
-  const [gameState, setGameState] = useState("showResults");
+  const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [submittedAnswer, setSubmittedAnswer] = useState("");
   const [timeLeft, setTimeLeft] = useState(30);
   const [score, setScore] = useState(0);
-  const [hints, setHints] = useState([]);
   const question = useRef(null);
   const [content, setContent] = useState("");
 
@@ -48,6 +46,10 @@ export default function PlayerPage({ username, socket }) {
           setGameState("questionStart");
         } else if (data.type === "hint") {
           setContent((prev) => (prev += data.hint));
+        } else if (data.type === "leaderboard") {
+          // TODO
+        } else if (data.type === "round-leaderboard") {
+          // TODO
         }
       };
 
@@ -181,14 +183,14 @@ export default function PlayerPage({ username, socket }) {
               <AnswerMultipleChoice
                 options={question.current.options}
                 onSubmit={() => {
-                  /**TODO */
+                  // TODO
                 }}
               />
             ) : (
               <AnswerShortPhrase
                 hint={question.current.answer.length + " characters"}
                 onSubmit={() => {
-                  /**TODO */
+                  // TODO
                 }}
               />
             )}

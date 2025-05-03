@@ -25,12 +25,10 @@ const mockPlayers = [
 ];
 
 export default function StagePage({ socket }) {
-  const [gameState, setGameState] = useState("showResults");
+  const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [score, setScore] = useState(0);
-  const [hints, setHints] = useState([]);
   const question = useRef(null);
   const [content, setContent] = useState("");
 
@@ -47,6 +45,10 @@ export default function StagePage({ socket }) {
           setGameState("questionStart");
         } else if (data.type === "hint") {
           setContent((prev) => (prev += data.hint));
+        } else if (data.type === "leaderboard") {
+          // TODO
+        } else if (data.type === "round-leaderboard") {
+          // TODO
         }
       };
 

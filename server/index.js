@@ -22,15 +22,15 @@ const mockCredentials = {
     { id: 4, username: "D", password: "abc" },
   ],
   host: { password: "asdf" },
-  // stage: { password: "hjkl" },
+  stage: { password: "hjkl" },
 };
 
 const mockPlayerData = [
   // Send to client
-  { id: 1, username: "A", password: "123", score: 0, isConnected: false },
-  { id: 2, username: "B", password: "456", score: 0, isConnected: false },
-  { id: 3, username: "C", password: "789", score: 0, isConnected: false },
-  { id: 4, username: "D", password: "abc", score: 0, isConnected: false },
+  { id: 1, username: "A", score: 0, isConnected: false },
+  { id: 2, username: "B", score: 0, isConnected: false },
+  { id: 3, username: "C", score: 0, isConnected: false },
+  { id: 4, username: "D", score: 0, isConnected: false },
 ];
 
 const mockQuestions = [
@@ -111,9 +111,6 @@ let rooms = {
   stageRoom: [],
 };
 
-let roundIndex = 0;
-let questionIndex = 0;
-
 // WebSocket logic
 wss.on("connection", (ws) => {
   console.log("WebSocket connection opened");
@@ -154,7 +151,8 @@ wss.on("connection", (ws) => {
       } else if (data.loginRole === "host") {
         if (mockCredentials.host.password === data.password) {
           response.status = "success";
-          response.players = mockPlayerData; // Players' usernames, scores and passwords
+          response.players = mockPlayerData; // Players' usernames and scores
+          response.credentials = mockCredentials; // Player's passwords
           response.questions = mockQuestions; // Questions' type, content, time, answer and hints
           ws.id = 1000; // Host id
           rooms.hostRoom.push(ws); // Join host room
@@ -196,6 +194,8 @@ wss.on("connection", (ws) => {
         socket.send(JSON.stringify({ type: "hint", hint: data.hint }));
       });
     }
+    // TODO data.type === host-leaderboard
+    // TODO data.type === host-round-leaderboard
   });
 
   ws.on("close", (code, reason) => {
