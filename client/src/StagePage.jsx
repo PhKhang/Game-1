@@ -24,11 +24,10 @@ const mockPlayers = [
   { id: "4", username: "Player4", score: 10 },
 ];
 
-export default function PlayerPage({ username, socket }) {
+export default function StagePage({ socket }) {
   const [gameState, setGameState] = useState("showResults");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [submittedAnswer, setSubmittedAnswer] = useState("");
   const [timeLeft, setTimeLeft] = useState(30);
   const [score, setScore] = useState(0);
   const [hints, setHints] = useState([]);
@@ -83,68 +82,42 @@ export default function PlayerPage({ username, socket }) {
   // }, [gameState]);
 
   return (
-    <div className="max-h-screen pt-4 flex flex-col">
+    <div className="h-screen max-h-screen pt-4 flex flex-col">
       <div className="flex-none w-full px-8">
         <div>
-          <div className="flex justify-between items-center mb-2 text-lg">
+          <div className="flex justify-center items-center mb-2 text-lg">
             <div className="flex space-x-4">
-              <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-                {username}
-              </div>
-              <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-                Điểm: {score}
-              </div>
+              <img src="/header.png" alt="" width="600" />
             </div>
-            {gameState === "questionStart" && (
-              <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-                <Timer
-                  seconds={timeLeft}
-                  onTimeout={() => {
-                    setTimeLeft(0);
-                    setGameState("questionEnd");
-                  }}
-                />
-              </div>
-            )}
-          </div>
-          <div className="text-sm text-gray-600">
-            {gameState === "waiting"
-              ? "Waiting for host to start the game"
-              : gameState === "questionStart"
-              ? `Round ${currentRoundIndex + 1}, Question ${
-                  currentQuestionIndex + 1
-                }`
-              : gameState === "showResults"
-              ? `Showing question ${currentQuestionIndex + 1} results`
-              : gameState === "showRoundResults"
-              ? `Showing round ${currentRoundIndex + 1} results`
-              : "Game Finished"}
           </div>
         </div>
+        {gameState === "questionStart" && (
+          <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
+            <Timer
+              seconds={timeLeft}
+              onTimeout={() => {
+                setTimeLeft(0);
+                setGameState("questionEnd");
+              }}
+            />
+          </div>
+        )}
+        <h1 className="text-4xl text-center font-bold mt-2">
+          Vòng {currentRoundIndex + 1}, câu hỏi {currentQuestionIndex + 1}
+        </h1>
       </div>
 
       {gameState === "waiting" && (
-        <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
-          <div className="flex flex-col items-center justify-center">
-            <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-              <p className="text-muted-foreground">
-                Waiting for the host to start the game...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      {gameState === "questionEnd" && (
-        <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
-          <div className="flex flex-col items-center justify-center">
-            <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-              <p className="text-muted-foreground">
-                The question has ended. Waiting for the host to show answer...
-              </p>
-            </div>
-          </div>
+        <div className="flex-1">
+          <img
+            src="/title.png"
+            alt=""
+            width="600"
+            className="relative top-28 left-[calc(50%-300px)]"
+          />
+          <h1 className="text-4xl font-bold text-blue-500 text-center relative top-38">
+            <span className="p-6 bg-blue-50/75 rounded-2xl">Game 1</span>
+          </h1>
         </div>
       )}
       {gameState === "showResults" && (
@@ -152,7 +125,7 @@ export default function PlayerPage({ username, socket }) {
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
               <p className="text-2xl mb-8 rounded-2xl bg-white p-6 shadow-neutral-900">
-                The correct answer is:{" "}
+                Câu trả lời đúng là:{" "}
                 <span className="text-green-600 font-bold">
                   {question.current.answer}
                 </span>
@@ -171,28 +144,23 @@ export default function PlayerPage({ username, socket }) {
           </div>
         </div>
       )}
-      {gameState === "questionStart" && (
+      {(gameState === "questionStart" || gameState === "questionEnd") && (
         <>
           <div className="flex-auto bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
             <PreviewDiv htmlContent={content} />
           </div>
-          <div className="flex-none h-80 flex items-center justify-center">
-            {question.current.type === "multiple-choice" ? (
+          {question.current.type === "multiple-choice" ? (
+            <div className="flex-none h-60 flex items-center justify-center">
               <AnswerMultipleChoice
                 options={question.current.options}
                 onSubmit={() => {
                   /**TODO */
                 }}
               />
-            ) : (
-              <AnswerShortPhrase
-                hint={question.current.answer.length + " characters"}
-                onSubmit={() => {
-                  /**TODO */
-                }}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="mb-4"></div>
+          )}
         </>
       )}
     </div>

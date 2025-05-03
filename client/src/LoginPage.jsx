@@ -37,7 +37,7 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="lg:max-w-5xl md:max-w-3xl sm:max-w-xl max-w-full">
         <Card className="shadow-lg w-xl">
           <img src="/cc25-main.png" width={360} className="m-auto" alt="" />

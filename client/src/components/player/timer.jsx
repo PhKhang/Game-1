@@ -26,7 +26,7 @@ const Timer = ({ seconds, onTimeout }) => {
   };
 
   return (
-    <div className="text-center space-y-4 w-18">
+    <div className="text-center space-y-4 min-w-18">
       <h2>{formatTime(Math.max(0, currSeconds - 1))}</h2>
     </div>
   );
