@@ -44,7 +44,7 @@ export default function StagePage({ socket }) {
           setCurrentQuestionIndex(data.questionIndex);
           setGameState("questionStart");
         } else if (data.type === "hint") {
-          setContent((prev) => (prev += data.hint));
+          setContent((prev) => prev + data.hint);
         } else if (data.type === "leaderboard") {
           // TODO
         } else if (data.type === "round-leaderboard") {
