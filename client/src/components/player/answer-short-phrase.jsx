@@ -26,7 +26,7 @@ const AnswerShortPhrase = ({ hint, onSubmit }) => {
             className="text-xl border font-mono bg-gray-200 resize-none rounded-2xl p-2"
             cols={80}
             rows={5}
-            type="text"
+            
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder={hint}
