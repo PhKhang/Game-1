@@ -116,6 +116,8 @@ function isCorrect(answer) {
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+//TODO: add a simple html page to upload problems (xlsx) and images (png,jpg,svg,...)
+
 // HTTP logic
 app.post("/upload", upload.single("file"), (req, res) => {
   questions = [];
@@ -199,7 +201,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
   }
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Serve static images in uploads directory
+app.use("/public", express.static(path.join(__dirname, "public"))); // Serve static images in public directory
 
 // WebSocket logic
 wss.on("connection", (ws) => {
@@ -231,6 +233,7 @@ wss.on("connection", (ws) => {
             response.username = player.username;
 
             const isReconnection =
+              //TODO: Beware if the player connects first => Can crash server
               gameState.playerStates[player.id].isConnected === false &&
               gameState.playerStates[player.id].lastSeen !== null;
 
@@ -253,7 +256,7 @@ wss.on("connection", (ws) => {
                 })
               );
             console.log(
-              `Player id ${playerId} ${
+              `Player id ${ws.id} ${
                 isReconnection ? "re" : ""
               }joined the player room`
             );
@@ -264,7 +267,7 @@ wss.on("connection", (ws) => {
             createGameSession();
             response.status = "success";
             response.players = mockPlayerData; // Players' usernames, scores and passwords
-            response.credentials = mockCredentials; // Player's passwords
+            response.credentials = mockCredentials.players; // Player's passwords
             // response.questions = mockQuestions; // Questions' type, content, time, answer and hints
             response.questions = questions; // Questions' type, content, time, answer and hints
             ws.id = 1000; // Host id
