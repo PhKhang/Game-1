@@ -8,9 +8,8 @@ const AnswerShortPhrase = ({ hint, onSubmit }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (onSubmit) onSubmit();
-    //TODO process answer
-    console.log(answer);
+    if (onSubmit) onSubmit(answer);
+    console.log("Submitted answer:", answer);
     setAnswerSubmitted(true);
   };
 
@@ -26,7 +25,6 @@ const AnswerShortPhrase = ({ hint, onSubmit }) => {
             className="text-xl border font-mono bg-gray-200 resize-none rounded-2xl p-2"
             cols={80}
             rows={5}
-            
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder={hint}

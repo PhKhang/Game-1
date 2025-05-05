@@ -165,12 +165,7 @@ export default function StagePage({ socket }) {
           </div>
           {question.current.type === "multiple-choice" ? (
             <div className="flex-none h-60 flex items-center justify-center">
-              <AnswerMultipleChoice
-                options={question.current.options}
-                onSubmit={() => {
-                  /**TODO */
-                }}
-              />
+              <AnswerMultipleChoice options={question.current.options} />
             </div>
           ) : (
             <div className="mb-4"></div>

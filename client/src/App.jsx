@@ -10,7 +10,7 @@ import StagePage from "./StagePage";
 
 function App() {
   const [page, setPage] = useState("login-page");
-  const [username, setUsername] = useState("");
+  const [playerInfo, setPlayerInfo] = useState(null);
   const [hostPlayers, setHostPlayers] = useState([]);
   const [hostQuestions, setHostQuestions] = useState([]);
 
@@ -82,7 +82,10 @@ function App() {
           setHostQuestions(validation.questions);
         } else if (role === "player") {
           setPage("player-page");
-          setUsername(validation.username);
+          setPlayerInfo({
+            username: validation.username,
+            playerId: validation.playerId,
+          });
         } else if (role === "stage") {
           setPage("stage-page");
         }
@@ -115,13 +118,17 @@ function App() {
       </>
     );
   } else if (page === "player-page") {
-    return <PlayerPage username={username} socket={socket} />;
+    return (
+      <PlayerPage
+        username={playerInfo.username}
+        playerId={playerInfo.id}
+        socket={socket}
+      />
+    );
   } else if (page === "stage-page") {
     return <StagePage socket={socket} />;
   }
   return <div>404</div>;
-  // return <PlayerPage username={"A"} />;
-  // return <StagePage />;
 }
 
 export default App;

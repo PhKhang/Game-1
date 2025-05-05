@@ -174,8 +174,13 @@ export default function HostPage({ players, questions, socket }) {
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showResults");
-                    //TODO handle showing round result/leaderboard
-                    //TODO socket.current.send(JSON.stringify({}))
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "show-results",
+                        roundIndex: currentRoundIndex,
+                        questionIndex: currentQuestionIndex,
+                      })
+                    );
                   }}
                   disabled={gameState !== "questionEnd"}
                 >
@@ -186,7 +191,12 @@ export default function HostPage({ players, questions, socket }) {
                   onClick={() => {
                     setGameState("showRoundResults");
                     //TODO handle showing round result/leaderboard
-                    //TODO socket.current.send(JSON.stringify({}))
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "show-results",
+                        roundIndex: currentRoundIndex,
+                      })
+                    );
                   }}
                   disabled={
                     gameState !== "showResults" ||

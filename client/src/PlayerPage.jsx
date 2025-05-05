@@ -30,7 +30,7 @@ const mockPlayers = [
   { id: "4", username: "Player4", score: 10 },
 ];
 
-export default function PlayerPage({ username, socket }) {
+export default function PlayerPage({ username, playerId, socket }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -52,9 +52,9 @@ export default function PlayerPage({ username, socket }) {
           setGameState("questionStart");
         } else if (data.type === "hint") {
           setContent((prev) => (prev += data.hint));
-        } else if (data.type === "leaderboard") {
+        } else if (data.type === "results") {
           // TODO
-        } else if (data.type === "round-leaderboard") {
+        } else if (data.type === "round-results") {
           // TODO
         }
       };
@@ -192,15 +192,27 @@ export default function PlayerPage({ username, socket }) {
             {question.current.type === "multiple-choice" ? (
               <AnswerMultipleChoice
                 options={question.current.options}
-                onSubmit={() => {
-                  // TODO
+                onSubmit={(answer) => {
+                  socket.current.send(
+                    JSON.stringify({
+                      type: "submit-answer",
+                      playerId: playerId,
+                      answer: answer,
+                    })
+                  );
                 }}
               />
             ) : (
               <AnswerShortPhrase
                 hint={question.current.answer.length + " characters"}
-                onSubmit={() => {
-                  // TODO
+                onSubmit={(answer) => {
+                  socket.current.send(
+                    JSON.stringify({
+                      type: "submit-answer",
+                      playerId: playerId,
+                      answer: answer,
+                    })
+                  );
                 }}
               />
             )}

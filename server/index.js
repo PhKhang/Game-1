@@ -231,6 +231,7 @@ wss.on("connection", (ws) => {
             );
             let player = mockPlayerData.find((p) => p.id === playerCred.id);
             response.username = player.username;
+            response.playerId = player.id;
 
             const isReconnection =
               //TODO: Beware if the player connects first => Can crash server
@@ -371,6 +372,16 @@ wss.on("connection", (ws) => {
             })
           );
         });
+        break;
+      }
+      case "show-round-results": {
+        // TODO
+        socket.send(
+          JSON.stringify({
+            type: "round-results",
+            results: results,
+          })
+        );
         break;
       }
     }
