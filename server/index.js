@@ -39,8 +39,11 @@ const mockQuestions = [
     {
       id: 1,
       type: "multiple-choice",
-      content:
-        '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+      content: `What is **the** capital of France?
+<img src="/cc25.jpg" width=50 alt="coding-challenge" />
+$$
+E=mc^2
+$$`,
       time: 20,
       options: ["London", "Berlin", "Paris", "Madrid"],
       answer: "Paris",
@@ -55,7 +58,7 @@ const mockQuestions = [
       id: 2,
       type: "short-phrase",
       content:
-        '<p>What is the chemical symbol for gold?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        '<p>What is the **chemical** symbol for gold?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
       time: 20,
       answer: "Au",
       hints: [
@@ -71,7 +74,7 @@ const mockQuestions = [
     {
       id: 3,
       type: "multiple-choice",
-      content: "<p>Who painted the ceiling of the Sistine Chapel?</p>",
+      content: "<p>Who **painted** the ceiling of the Sistine Chapel?</p>",
       time: 20,
       options: [
         "Leonardo da Vinci",
@@ -91,7 +94,7 @@ const mockQuestions = [
       id: 4,
       type: "short-phrase",
       content:
-        '<p>Which planet is known as the "Red Planet"?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
+        '<p>Which planet is **known** as the "Red Planet"?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
       time: 20,
       answer: "Mars",
       hints: [
@@ -152,7 +155,7 @@ wss.on("connection", (ws) => {
         if (mockCredentials.host.password === data.password) {
           response.status = "success";
           response.players = mockPlayerData; // Players' usernames and scores
-          response.credentials = mockCredentials; // Player's passwords
+          response.credentials = mockCredentials.players; // Player's passwords
           response.questions = mockQuestions; // Questions' type, content, time, answer and hints
           ws.id = 1000; // Host id
           rooms.hostRoom.push(ws); // Join host room
@@ -162,7 +165,7 @@ wss.on("connection", (ws) => {
           console.log("Login failed");
         }
       } else if (data.loginRole === "stage") {
-        if (mockCredentials.host.password === data.password) {
+        if (mockCredentials.stage.password === data.password) {
           response.status = "success";
           ws.id = 1001; // Stage id
           rooms.stageRoom.push(ws); // Join stage room

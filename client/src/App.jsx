@@ -71,7 +71,14 @@ function App() {
       if (validation.status === "success") {
         if (role === "host") {
           setPage("host-page");
-          setHostPlayers(validation.players);
+          setHostPlayers(
+            validation.players.map((player) => ({
+              ...player,
+              password: validation.credentials.find(
+                (cred) => cred.id === player.id
+              ).password,
+            }))
+          );
           setHostQuestions(validation.questions);
         } else if (role === "player") {
           setPage("player-page");

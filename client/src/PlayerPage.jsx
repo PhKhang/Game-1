@@ -16,6 +16,12 @@ import Timer from "@/components/player/timer";
 import Leaderboard from "@/components/player/leaderboard";
 import PreviewDiv from "@/components/preview-div";
 
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+
 // Mock data
 const mockPlayers = [
   { id: "1", username: "Player1", score: 30 },
@@ -176,7 +182,11 @@ export default function PlayerPage({ username, socket }) {
       {gameState === "questionStart" && (
         <>
           <div className="flex-auto bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
-            <PreviewDiv htmlContent={content} />
+            <ReactMarkdown
+              children={content}
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+            />
           </div>
           <div className="flex-none h-80 flex items-center justify-center">
             {question.current.type === "multiple-choice" ? (

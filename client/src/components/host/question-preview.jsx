@@ -13,6 +13,12 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import PreviewDiv from "../preview-div";
 
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import "katex/dist/katex.min.css";
+
 export default function QuestionPreview({ question }) {
   // The content for preview (question, hints or answer)
   const [previewContent, setPreviewContent] = useState(question.content);
@@ -35,7 +41,11 @@ export default function QuestionPreview({ question }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <PreviewDiv htmlContent={previewContent} />
+        <ReactMarkdown
+          children={previewContent}
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeRaw, rehypeKatex]}
+        />
       </CardContent>
       <CardFooter className="overflow-visible">
         <Button

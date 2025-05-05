@@ -274,6 +274,7 @@ export default function HostPage({ players, questions, socket }) {
                   {players.map((player) => {
                     return (
                       <Player
+                        key={player.id}
                         id={player.id}
                         username={player.username}
                         password={player.password}
