@@ -22,7 +22,6 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-
 const mockCredentials = {
   // Server only, do NOT send to client
   players: [
@@ -225,7 +224,9 @@ wss.on("connection", (ws) => {
         // Handle valid connections
         switch (data.loginRole) {
           case "player": {
-            let playerCred = mockCredentials.players.find((p) => p.password === data.password);
+            let playerCred = mockCredentials.players.find(
+              (p) => p.password === data.password
+            );
             let player = mockPlayerData.find((p) => p.id === playerCred.id);
             response.username = player.username;
 
@@ -290,7 +291,9 @@ wss.on("connection", (ws) => {
         // Start new round
         if (gameState.roundIndex !== data.roundIndex) {
           gameState.roundIndex = data.roundIndex;
-          gameState.roundScores[data.roundIndex] = [...Array(mockPlayerData.length).fill(0)];
+          gameState.roundScores[data.roundIndex] = [
+            ...Array(mockPlayerData.length).fill(0),
+          ];
           gameState.playerStates.forEach((player) => {
             player.roundScores[data.roundIndex] = 0;
           });
