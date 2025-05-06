@@ -15,8 +15,19 @@ function App() {
   const [hostQuestions, setHostQuestions] = useState([]);
 
   const socket = useRef(null);
+  const http = useRef(null);
+
+  const handleUploadMessage = (e) => { // Handle new question upload
+    if (e.data?.type === 'excel-upload-result') {
+      const questions = e.data.questions;
+      console.log('Received Excel questions');
+      setHostQuestions(questions);
+    }
+  };
+
   useEffect(() => {
     socket.current = new WebSocket("ws://localhost:3000"); // Replace with your server URL
+    http.current = "http://localhost:3000";
 
     // Handle socket connection
     socket.current.onopen = () => {
@@ -31,9 +42,13 @@ function App() {
       console.log("WebSocket connection closed");
     };
 
+    // Handle window message
+    window.addEventListener("message", handleUploadMessage);
+
     return () => {
       // Clean up on unmount
       socket.current.close();
+      window.removeEventListener("message", handleUploadMessage);
     };
   }, []);
 
@@ -113,6 +128,7 @@ function App() {
           players={hostPlayers}
           questions={hostQuestions}
           socket={socket}
+          http={http}
         />
         <Toaster />
       </>

@@ -72,39 +72,86 @@ function createGameSession() {
     roundIndex: 0,
     questionIndex: 0,
     score: 10,
-    playerStates: {}, // Will store player state by ID
-    roundScores: [], // Array of score objects by round
+    players: {}, // Will store player state by ID
   };
 
   mockPlayerData.forEach((player) => {
-    gameState.playerStates[player.id] = {
+    gameState.players[player.id] = {
       id: player.id,
       username: player.username,
       isConnected: false,
       totalScore: 0,
-      roundScores: [],
+      scores: [],
       lastSeen: null,
       currentSocket: null,
     };
+    gameState.players[player.id].scores.push(
+      ...Array(questions.length).fill([])
+    );
+    questions.forEach((round, roundIndex) => {
+      gameState.players[player.id].scores[roundIndex].push(
+        ...Array(round.length).fill([])
+      );
+      round.forEach((question, questionIndex) => {
+        gameState.players[player.id].scores[roundIndex][questionIndex] = 0;
+      });
+    });
   });
 }
 
-function updatePlayerScore(playerId, roundIndex, score) {
-  if (!gameState.playerStates[playerId].totalScore) {
-    gameState.playerStates[playerId].totalScore = 0;
+function removeGameSession() {
+  gameState = {
+    roomId: null,
+    isActive: false,
+    roundIndex: 0,
+    questionIndex: 0,
+    score: 10,
+    players: {},
+    scores: [],
+  };
+}
+
+function updatePlayerScore(playerId, roundIndex, questionIndex, score) {
+  if (!gameState.players[playerId].totalScore) {
+    gameState.players[playerId].totalScore = 0;
   }
-  gameState.playerStates[playerId].totalScore += score;
-  gameState.playerStates[playerId].roundScores[roundIndex] =
-    gameState.playerStates[playerId].totalScore;
+  gameState.players[playerId].totalScore += score;
+  gameState.players[playerId].scores[roundIndex][questionIndex] =
+    gameState.players[playerId].totalScore;
 
-  gameState.roundScores[roundIndex][playerId] =
-    gameState.playerStates[playerId].roundScores[roundIndex];
-
-  return gameState.playerStates[playerId].roundScores[roundIndex];
+  return gameState.players[playerId].scores[roundIndex][questionIndex];
 }
 
 function getRoundResults(roundIndex) {
-  return gameState.roundScores[roundIndex];
+  const scoreScheme = [
+    { id: 1, username: "A", score: 0 },
+    { id: 2, username: "B", score: 0 },
+    { id: 3, username: "C", score: 0 },
+    { id: 4, username: "D", score: 0 },
+  ];
+
+  scoreScheme.forEach((player) => {
+    let endIndex = gameState.players[player.id].scores[roundIndex].length - 1;
+    player.score = gameState.players[player.id].scores[roundIndex][endIndex];
+  });
+
+  return scoreScheme;
+}
+
+function getQuestionResults(roundIndex, questionIndex) {
+  const scoreScheme = [
+    { id: 1, username: "A", score: 0 },
+    { id: 2, username: "B", score: 0 },
+    { id: 3, username: "C", score: 0 },
+    { id: 4, username: "D", score: 0 },
+  ];
+
+  scoreScheme.forEach((player) => {
+    player.score =
+      gameState.players[player.id].scores[roundIndex][questionIndex];
+  });
+
+  return scoreScheme;
 }
 
 function isCorrect(answer) {
@@ -118,6 +165,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 //TODO: add a simple html page to upload problems (xlsx) and images (png,jpg,svg,...)
 
+app.get("/upload", (req, res) => {
+  res.sendFile(__dirname + "/upload.html");
+});
+
 // HTTP logic
 app.post("/upload", upload.single("file"), (req, res) => {
   questions = [];
@@ -128,11 +179,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json(sheet);
 
-    const uploadsDir = path.join(__dirname, "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir);
-    }
-
     // `data` is an array of objects, one per row
     let Round = 2;
     let rowIndex = 0;
@@ -142,66 +188,70 @@ app.post("/upload", upload.single("file"), (req, res) => {
       let questionsPerRound = 2;
 
       while (questionsPerRound--) {
-        let tmp = {};
         let row = data[rowIndex++];
-        let imagePath = null;
 
-        console.log(data.media);
-        if (row["image"]) {
-          const base64String = row["image"];
-          const matches = base64String.match(
-            /^data:image\/(png|jpeg);base64,(.+)$/
-          );
-
-          if (matches) {
-            const ext = matches[1];
-            const base64Data = matches[2];
-            const imageFileName = `question_${row["id"]}.${ext}`;
-            const imageFullPath = path.join(uploadsDir, imageFileName);
-            fs.writeFileSync(imageFullPath, base64Data, "base64");
-            imagePath = `/uploads/${imageFileName}`; // Public path
-            imagePaths.push(imagePath); // Store the path for later use
-          }
-        }
-
-        if (row["type"] === "multiple-choice") {
-          tmp = {
-            id: row["id"],
-            type: row["type"],
-            content: row["question"],
-            time: row["time"],
-            options: [
-              row["option1"],
-              row["option2"],
-              row["option3"],
-              row["option4"],
-            ],
-            answer: row["answer"],
-            hints: [row["hint1"], row["hint2"], row["hint3"], row["hint4"]],
-          };
-        } else if (row["type"] === "short-phrase") {
-          tmp = {
-            id: row["id"],
-            type: row["type"],
-            content: row["question"],
-            time: row["time"],
-            answer: row["answer"],
-            hints: [row["hint1"], row["hint2"], row["hint3"], row["hint4"]],
-          };
-        }
-        questionObj.push(tmp);
+        questionObj.push({
+          id: row["id"],
+          type: row["type"],
+          content: row["question"],
+          time: row["time"],
+          answer: row["answer"],
+          hints: [row["hint1"], row["hint2"], row["hint3"], row["hint4"]],
+        });
       }
       questions.push(questionObj);
     }
 
-    res.json({ success: true, questions, imagePaths });
+    res.json({ success: true, questions });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: "Failed to process file" });
   }
 });
 
-app.use("/public", express.static(path.join(__dirname, "public"))); // Serve static images in public directory
+app.post("/upload-image", upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, error: "No file uploaded" });
+    }
+
+    const uploadsDir = path.join(__dirname, "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir);
+    }
+
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    const validExtensions = [".png", ".jpg", ".jpeg", ".svg"];
+
+    if (!validExtensions.includes(fileExtension)) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Invalid file type. Only PNG, JPG, JPEG, and SVG files are allowed.",
+      });
+    }
+
+    const fileName = `image_${Date.now()}${fileExtension}`;
+    const filePath = path.join(uploadsDir, fileName);
+
+    fs.writeFileSync(filePath, req.file.buffer);
+
+    const imagePath = `/uploads/${fileName}`;
+    imagePaths.push(imagePath);
+
+    res.json({
+      success: true,
+      path: imagePath,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Failed to process image" });
+  }
+});
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // WebSocket logic
 wss.on("connection", (ws) => {
@@ -235,12 +285,12 @@ wss.on("connection", (ws) => {
 
             const isReconnection =
               //TODO: Beware if the player connects first => Can crash server
-              gameState.playerStates[player.id].isConnected === false &&
-              gameState.playerStates[player.id].lastSeen !== null;
+              gameState.players[player.id].isConnected === false &&
+              gameState.players[player.id].lastSeen !== null;
 
-            gameState.playerStates[player.id].isConnected = true;
-            gameState.playerStates[player.id].lastSeen = Date.now();
-            gameState.playerStates[player.id].currentSocket = ws;
+            gameState.players[player.id].isConnected = true;
+            gameState.players[player.id].lastSeen = Date.now();
+            gameState.players[player.id].currentSocket = ws;
 
             response.status = "success";
             ws.id = player.id;
@@ -253,7 +303,7 @@ wss.on("connection", (ws) => {
                 JSON.stringify({
                   type: isReconnection ? "reconnect-player" : "connect-player",
                   playerId: ws.id,
-                  playerState: gameState.playerStates[player.id],
+                  playerState: gameState.players[player.id],
                 })
               );
             console.log(
@@ -266,6 +316,7 @@ wss.on("connection", (ws) => {
           }
           case "host": {
             createGameSession();
+            console.dir(gameState.players, { depth: null });
             response.status = "success";
             response.players = mockPlayerData; // Players' usernames, scores and passwords
             response.credentials = mockCredentials.players; // Player's passwords
@@ -295,11 +346,11 @@ wss.on("connection", (ws) => {
         // Start new round
         if (gameState.roundIndex !== data.roundIndex) {
           gameState.roundIndex = data.roundIndex;
-          gameState.roundScores[data.roundIndex] = [
+          gameState.scores[data.roundIndex] = [
             ...Array(mockPlayerData.length).fill(0),
           ];
-          gameState.playerStates.forEach((player) => {
-            player.roundScores[data.roundIndex] = 0;
+          gameState.players.forEach((player) => {
+            player.scores[data.roundIndex] = 0;
           });
         }
         gameState.questionIndex = data.questionIndex;
@@ -328,7 +379,7 @@ wss.on("connection", (ws) => {
         // Update score for each player at a time
         const { playerId, answer } = data;
 
-        if (gameState.playerStates[playerId]) {
+        if (gameState.players[playerId]) {
           // Update the player's score for this round
           let newScore = 0;
           if (isCorrect(answer))
@@ -376,6 +427,7 @@ wss.on("connection", (ws) => {
       }
       case "show-round-results": {
         // TODO
+        let results = getRoundResults(data.roundIndex);
         socket.send(
           JSON.stringify({
             type: "round-results",
@@ -396,11 +448,11 @@ wss.on("connection", (ws) => {
       if (rooms.playerRoom.includes(ws)) {
         rooms.playerRoom = rooms.playerRoom.filter((client) => client !== ws);
 
-        if (ws.id && gameState.playerStates[ws.id]) {
+        if (ws.id && gameState.players[ws.id]) {
           const playerId = ws.id;
-          gameState.playerStates[playerId].isConnected = false;
-          gameState.playerStates[playerId].lastSeen = Date.now();
-          gameState.playerStates[playerId].currentSocket = null;
+          gameState.players[playerId].isConnected = false;
+          gameState.players[playerId].lastSeen = Date.now();
+          gameState.players[playerId].currentSocket = null;
 
           let player = mockPlayerData.find((p) => p.id === ws.id);
           if (player) player.isConnected = false;
@@ -410,7 +462,7 @@ wss.on("connection", (ws) => {
               JSON.stringify({
                 type: "disconnect-player",
                 playerId: ws.id,
-                playerState: gameState.playerStates[playerId],
+                playerState: gameState.players[playerId],
               })
             );
           console.log(

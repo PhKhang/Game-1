@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useRef, useEffect } from "react";
 import Player from "@/components/host/player";
@@ -24,7 +24,7 @@ const PlayerStateBadge = ({ state }) => {
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
 
-export default function HostPage({ players, questions, socket }) {
+export default function HostPage({ players, questions, socket, http }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -37,7 +37,6 @@ export default function HostPage({ players, questions, socket }) {
       ])
     )
   );
-
   useEffect(() => {
     if (socket && socket.current) {
       const handleMessage = (event) => {
@@ -87,6 +86,20 @@ export default function HostPage({ players, questions, socket }) {
     setCurrentRoundIndex(nextRoundIndex);
     setGameState("questionStart");
   };
+
+  function showUploadPanel(){
+    window.open("/upload", "UploadFile", "width=600,height=800");
+
+    const handleUploadMessage = (e) => {
+      if (e.data?.type === 'excel-upload-result') {
+        const questions = e.data.questions;
+        console.log('Received Excel questions');
+        
+      }
+
+    };
+    window.addEventListener()
+  }
 
   return (
     <div className="flex min-h-screen flex-col p-4 bg-gradient-to-b from-blue-50 to-blue-100">
@@ -276,6 +289,14 @@ export default function HostPage({ players, questions, socket }) {
                       </div>
                     );
                   })}
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 font-bold m-1"
+                    onClick={() => {
+                      showUploadPanel();
+                    }}
+                  >
+                    Upload Questions
+                  </Button>
                 </div>
               </TabsContent>
 

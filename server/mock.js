@@ -11,11 +11,10 @@ const questions = [
   [
     {
       id: 1,
-      type: "multiple-choice",
+      type: "short-phrase",
       content:
         '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
       time: 20,
-      options: ["London", "Berlin", "Paris", "Madrid"],
       answer: "Paris",
       hints: [
         "It's in Western Europe",
@@ -43,15 +42,9 @@ const questions = [
   [
     {
       id: 3,
-      type: "multiple-choice",
+      type: "short-phrase",
       content: "<p>Who painted the ceiling of the Sistine Chapel?</p>",
       time: 20,
-      options: [
-        "Leonardo da Vinci",
-        "Vincent van Gogh",
-        "Michelangelo",
-        "Raphael",
-      ],
       answer: "Michelangelo",
       hints: [
         "He was also a sculptor, not just a painter.",
