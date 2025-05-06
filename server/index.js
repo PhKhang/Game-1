@@ -99,6 +99,28 @@ function createGameSession() {
   });
 }
 
+function resetGameSession() {
+  gameState.roundIndex = 0;
+  gameState.questionIndex = 0;
+
+  mockPlayerData.forEach((player) => {
+    gameState.players[player.id].totalScore = 0;
+    gameState.players[player.id].scores = [];
+    
+    gameState.players[player.id].scores.push(
+      ...Array(questions.length).fill([])
+    );
+    questions.forEach((round, roundIndex) => {
+      gameState.players[player.id].scores[roundIndex].push(
+        ...Array(round.length).fill([])
+      );
+      round.forEach((question, questionIndex) => {
+        gameState.players[player.id].scores[roundIndex][questionIndex] = 0;
+      });
+    });
+  });
+}
+
 function removeGameSession() {
   gameState = {
     roomId: null,
@@ -147,8 +169,7 @@ function getQuestionResults(roundIndex, questionIndex) {
   ];
 
   scoreScheme.forEach((player) => {
-    player.score =
-      gameState.players[player.id].scores[roundIndex][questionIndex];
+    player.score = gameState.players[player.id].scores[roundIndex][questionIndex];
   });
 
   return scoreScheme;
@@ -162,8 +183,6 @@ function isCorrect(answer) {
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
-
-//TODO: add a simple html page to upload problems (xlsx) and images (png,jpg,svg,...)
 
 app.get("/upload", (req, res) => {
   res.sendFile(__dirname + "/upload.html");
@@ -201,7 +220,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
       }
       questions.push(questionObj);
     }
-
+    resetGameSession();
     res.json({ success: true, questions });
   } catch (error) {
     console.error(error);
@@ -276,6 +295,15 @@ wss.on("connection", (ws) => {
         // Handle valid connections
         switch (data.loginRole) {
           case "player": {
+            if(!rooms.hostRoom[0]){
+              response = {
+                type: "error",
+                error: "Host has not joined the room yet!",
+              }
+              ws.send(JSON.stringify(response))
+              return;
+            }
+
             let playerCred = mockCredentials.players.find(
               (p) => p.password === data.password
             );
@@ -284,7 +312,6 @@ wss.on("connection", (ws) => {
             response.playerId = player.id;
 
             const isReconnection =
-              //TODO: Beware if the player connects first => Can crash server
               gameState.players[player.id].isConnected === false &&
               gameState.players[player.id].lastSeen !== null;
 
@@ -316,6 +343,7 @@ wss.on("connection", (ws) => {
           }
           case "host": {
             createGameSession();
+            console.log("here");
             console.dir(gameState.players, { depth: null });
             response.status = "success";
             response.players = mockPlayerData; // Players' usernames, scores and passwords
@@ -344,15 +372,7 @@ wss.on("connection", (ws) => {
       }
       case "host-start-question": {
         // Start new round
-        if (gameState.roundIndex !== data.roundIndex) {
-          gameState.roundIndex = data.roundIndex;
-          gameState.scores[data.roundIndex] = [
-            ...Array(mockPlayerData.length).fill(0),
-          ];
-          gameState.players.forEach((player) => {
-            player.scores[data.roundIndex] = 0;
-          });
-        }
+        gameState.roundIndex = data.roundIndex;
         gameState.questionIndex = data.questionIndex;
 
         // Send question to players
@@ -362,7 +382,7 @@ wss.on("connection", (ws) => {
               type: "start-question",
               roundIndex: data.roundIndex,
               questionIndex: data.questionIndex,
-              question: mockQuestions[data.roundIndex][data.questionIndex],
+              question: questions[data.roundIndex][data.questionIndex],
             })
           );
         });
@@ -413,7 +433,7 @@ wss.on("connection", (ws) => {
         break;
       }
       case "show-results": {
-        let results = getRoundResults(data.roundIndex);
+        let results = getQuestionResults(data.roundIndex, data.questionIndex);
         rooms.playerRoom.forEach((socket) => {
           // Send leaderboard for each players
           socket.send(
@@ -426,7 +446,6 @@ wss.on("connection", (ws) => {
         break;
       }
       case "show-round-results": {
-        // TODO
         let results = getRoundResults(data.roundIndex);
         socket.send(
           JSON.stringify({
@@ -435,6 +454,10 @@ wss.on("connection", (ws) => {
           })
         );
         break;
+      }
+      case "host-reset-game": {
+        resetGameSession();
+        //TODO Handle game reset for players
       }
     }
   });
@@ -475,6 +498,7 @@ wss.on("connection", (ws) => {
       if (rooms.hostRoom.includes(ws)) {
         rooms.hostRoom = rooms.hostRoom.filter((client) => client !== ws);
         console.log("Host left host room");
+        removeGameSession();
       }
 
       // Stage room

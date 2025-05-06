@@ -65,9 +65,13 @@ function App() {
     const validation = await new Promise((resolve, reject) => {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
+        console.log(data.type);
         if (data.type === "login-response") {
           socket.current.removeEventListener("message", handleMessage);
           resolve(data);
+        }
+        if (data.type === "error"){
+          reject(new Error(data.error));
         }
       };
 
@@ -110,7 +114,7 @@ function App() {
     } catch (reason) {
       // Server failed to respond
       toast.error("Something went wrong!");
-      console.log("Login failed", reason);
+      console.log("Login failed ", reason);
     }
   };
 

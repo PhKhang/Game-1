@@ -203,7 +203,6 @@ export default function HostPage({ players, questions, socket, http }) {
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showRoundResults");
-                    //TODO handle showing round result/leaderboard
                     socket.current.send(
                       JSON.stringify({
                         type: "show-results",
@@ -248,6 +247,11 @@ export default function HostPage({ players, questions, socket, http }) {
                     setGameState("waiting");
                     setCurrentQuestionIndex(0);
                     setCurrentRoundIndex(0);
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "host-reset-game",
+                      })
+                    )
                   }}
                 >
                   Reset

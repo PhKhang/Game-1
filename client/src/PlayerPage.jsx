@@ -24,10 +24,10 @@ import "katex/dist/katex.min.css";
 
 // Mock data
 const mockPlayers = [
-  { id: "1", username: "Player1", score: 30 },
-  { id: "2", username: "Player2", score: 20 },
-  { id: "3", username: "Player3", score: 40 },
-  { id: "4", username: "Player4", score: 10 },
+  { id: 1, username: "Player1", score: 30 },
+  { id: 2, username: "Player2", score: 20 },
+  { id: 3, username: "Player3", score: 40 },
+  { id: 4, username: "Player4", score: 10 },
 ];
 
 export default function PlayerPage({ username, playerId, socket }) {
@@ -36,6 +36,7 @@ export default function PlayerPage({ username, playerId, socket }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [score, setScore] = useState(0);
+  const [playerScores, setPlayerScores] = useState([]);
   const question = useRef(null);
   const [content, setContent] = useState("");
 
@@ -53,9 +54,11 @@ export default function PlayerPage({ username, playerId, socket }) {
         } else if (data.type === "hint") {
           setContent((prev) => (prev += data.hint));
         } else if (data.type === "results") {
-          // TODO
+          setGameState("showResults");
+          setPlayerScores(data.results);
         } else if (data.type === "round-results") {
-          // TODO
+          setGameState("showRoundResults");
+          setPlayerScores(data.results);
         }
       };
 
@@ -165,7 +168,7 @@ export default function PlayerPage({ username, playerId, socket }) {
                   {question.current.answer}
                 </span>
               </p>
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={playerScores}></Leaderboard>
             </div>
           </div>
         </div>
@@ -174,7 +177,7 @@ export default function PlayerPage({ username, playerId, socket }) {
         <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={playerScores}></Leaderboard>
             </div>
           </div>
         </div>
