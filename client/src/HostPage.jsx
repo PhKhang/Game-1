@@ -210,7 +210,7 @@ export default function HostPage({
                     setGameState("showRoundResults");
                     socket.current.send(
                       JSON.stringify({
-                        type: "show-results",
+                        type: "show-round-results",
                         roundIndex: currentRoundIndex,
                       })
                     );

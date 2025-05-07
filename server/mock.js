@@ -1,16 +1,16 @@
 const playerData = [
   // Send to client
-  { id: 1, username: "A", password: "123", score: 0, isConnected: false },
-  { id: 2, username: "B", password: "456", score: 0, isConnected: false },
-  { id: 3, username: "C", password: "789", score: 0, isConnected: false },
-  { id: 4, username: "D", password: "abc", score: 0, isConnected: false },
+  { id: 0, username: "A", password: "123", score: 0, isConnected: false },
+  { id: 1, username: "B", password: "456", score: 0, isConnected: false },
+  { id: 2, username: "C", password: "789", score: 0, isConnected: false },
+  { id: 3, username: "D", password: "abc", score: 0, isConnected: false },
 ];
 
 const questions = [
   // Round 1
   [
     {
-      id: 1,
+      id: 0,
       type: "short-phrase",
       content:
         '<p>What is the <strong>capital</strong> of France?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
@@ -24,7 +24,7 @@ const questions = [
       ],
     },
     {
-      id: 2,
+      id: 1,
       type: "short-phrase",
       content:
         '<p>What is the chemical symbol for gold?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
@@ -41,7 +41,7 @@ const questions = [
   // Round 2
   [
     {
-      id: 3,
+      id: 2,
       type: "short-phrase",
       content: "<p>Who painted the ceiling of the Sistine Chapel?</p>",
       time: 20,
@@ -54,7 +54,7 @@ const questions = [
       ],
     },
     {
-      id: 4,
+      id: 3,
       type: "short-phrase",
       content:
         '<p>Which planet is known as the "Red Planet"?</p> <img src="/cc25.jpg" width=50 alt="coding-challenge" />',
@@ -73,10 +73,10 @@ const questions = [
 const mockCredentials = {
   // Server only, do NOT send to client
   players: [
-    { id: 1, username: "A", password: "123" },
-    { id: 2, username: "B", password: "456" },
-    { id: 3, username: "C", password: "789" },
-    { id: 4, username: "D", password: "abc" },
+    { id: 0, username: "A", password: "123" },
+    { id: 1, username: "B", password: "456" },
+    { id: 2, username: "C", password: "789" },
+    { id: 3, username: "D", password: "abc" },
   ],
   host: { password: "asdf" },
   stage: { password: "hjkl" },

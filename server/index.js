@@ -61,19 +61,20 @@ function createGameSession() {
     roundIndex: 0,
     questionIndex: 0,
     score: 10,
-    players: {}, // Will store player state by ID
+    players: [], // Will store player state by ID
   };
 
   playerData.forEach((player) => {
-    gameState.players[player.id] = {
+    gameState.players.push({
       id: player.id,
       username: player.username,
+      password: player.password,
       isConnected: false,
-      totalScore: 0,
+      score: 0,
       scores: [],
       lastSeen: null,
       currentSocket: null,
-    };
+    });
     gameState.players[player.id].scores.push(
       ...Array(questions.length).fill([])
     );
@@ -88,12 +89,16 @@ function createGameSession() {
   });
 }
 
+function debug() {
+  console.dir(gameState, { depth: 3 });
+}
+
 function resetGameSession() {
   gameState.roundIndex = 0;
   gameState.questionIndex = 0;
 
   playerData.forEach((player) => {
-    gameState.players[player.id].totalScore = 0;
+    gameState.players[player.id].score = 0;
     gameState.players[player.id].scores = [];
 
     gameState.players[player.id].scores.push(
@@ -123,27 +128,28 @@ function removeGameSession() {
 }
 
 function updatePlayerScore(playerId, roundIndex, questionIndex, score) {
-  if (!gameState.players[playerId].totalScore) {
-    gameState.players[playerId].totalScore = 0;
+  if (!gameState.players[playerId].score) {
+    gameState.players[playerId].score = 0;
   }
-  gameState.players[playerId].totalScore += score;
+  gameState.players[playerId].score += score;
+  // console.dir(gameState.players[playerId].scores);
   gameState.players[playerId].scores[roundIndex][questionIndex] =
-    gameState.players[playerId].totalScore;
+    gameState.players[playerId].score;
 
-  return gameState.players[playerId].scores[roundIndex][questionIndex];
+  return gameState.players[playerId].score;
 }
 
 function getRoundResults(roundIndex) {
   const scoreScheme = [
-    { id: 1, username: "A", score: 0 },
-    { id: 2, username: "B", score: 0 },
-    { id: 3, username: "C", score: 0 },
-    { id: 4, username: "D", score: 0 },
+    { id: 0, username: "A", score: 0 },
+    { id: 1, username: "B", score: 0 },
+    { id: 2, username: "C", score: 0 },
+    { id: 3, username: "D", score: 0 },
   ];
 
   scoreScheme.forEach((player) => {
-    let endIndex = gameState.players[player.id].scores[roundIndex].length - 1;
-    player.score = gameState.players[player.id].scores[roundIndex][endIndex];
+    player.score =
+      gameState.players[player.id].scores[roundIndex][gameState.questionIndex];
   });
 
   return scoreScheme;
@@ -151,10 +157,10 @@ function getRoundResults(roundIndex) {
 
 function getQuestionResults(roundIndex, questionIndex) {
   const scoreScheme = [
-    { id: 1, username: "A", score: 0 },
-    { id: 2, username: "B", score: 0 },
-    { id: 3, username: "C", score: 0 },
-    { id: 4, username: "D", score: 0 },
+    { id: 0, username: "A", score: 0 },
+    { id: 1, username: "B", score: 0 },
+    { id: 2, username: "C", score: 0 },
+    { id: 3, username: "D", score: 0 },
   ];
 
   scoreScheme.forEach((player) => {
@@ -242,7 +248,7 @@ app.post("/upload-image", upload.single("file"), (req, res) => {
       });
     }
 
-    const fileName = `image_${Date.now()}${fileExtension}`;
+    const fileName = req.file.originalname;
     const filePath = path.join(uploadsDir, fileName);
 
     fs.writeFileSync(filePath, req.file.buffer);
@@ -332,11 +338,12 @@ wss.on("connection", (ws) => {
             break;
           }
           case "host": {
+            // questions = mockQuestions;
             createGameSession();
-            console.log("here");
-            console.dir(gameState.players, { depth: null });
             response.status = "success";
-            response.players = playerData; // Players' usernames, scores and passwords
+            console.log(gameState.players[0].scores);
+            response.players = gameState.players; // Players' usernames, scores and passwords
+            // response.players = playerData; // Players' usernames, scores and passwords
             response.credentials = credentials.players; // Player's passwords
             // response.questions = mockQuestions; // Questions' type, content, time, answer and hints
             response.questions = questions; // Questions' type, content, time, answer and hints
@@ -366,8 +373,8 @@ wss.on("connection", (ws) => {
         gameState.questionIndex = data.questionIndex;
 
         // Send question to players
-        rooms.playerRoom.forEach((socket) => {
-          socket.send(
+        rooms.playerRoom.forEach((player) => {
+          player.send(
             JSON.stringify({
               type: "start-question",
               roundIndex: data.roundIndex,
@@ -392,23 +399,28 @@ wss.on("connection", (ws) => {
         if (gameState.players[playerId]) {
           // Update the player's score for this round
           let newScore = 0;
-          if (isCorrect(answer))
+          console.log(
+            `Player ${playerId} is answering in round ${gameState.roundIndex}, question ${gameState.questionIndex}`
+          );
+          if (isCorrect(answer)) {
             newScore = updatePlayerScore(
               playerId,
               gameState.roundIndex,
+              gameState.questionIndex,
               gameState.score
             );
-          else newScore = updatePlayerScore(playerId, gameState.roundIndex, 0);
-
+            // debug();
+          } else
+            newScore = updatePlayerScore(
+              playerId,
+              gameState.roundIndex,
+              gameState.questionIndex,
+              0
+            );
           response = {
-            type: "score-updated",
-            playerId: playerId,
-            roundIndex: roundIndex,
-            roundScore: newScore,
+            type: "update-players",
+            players: gameState.players,
           };
-
-          // Send score update to the player
-          socket.send(JSON.stringify(response));
 
           // Send score update to host
           if (rooms.hostRoom[0]) {
@@ -423,7 +435,21 @@ wss.on("connection", (ws) => {
         break;
       }
       case "show-results": {
+        // debug();
         let results = getQuestionResults(data.roundIndex, data.questionIndex);
+
+        // Update total score for players
+        rooms.playerRoom.forEach((player) => {
+          player.send(
+            JSON.stringify({
+              type: "update-score",
+              roundIndex: data.roundIndex,
+              questionIndex: data.questionIndex,
+              newScore: gameState.players[player.id].score,
+            })
+          );
+        });
+
         rooms.playerRoom.forEach((socket) => {
           // Send leaderboard for each players
           socket.send(
@@ -437,12 +463,15 @@ wss.on("connection", (ws) => {
       }
       case "show-round-results": {
         let results = getRoundResults(data.roundIndex);
-        socket.send(
-          JSON.stringify({
-            type: "round-results",
-            results: results,
-          })
-        );
+        rooms.playerRoom.forEach((socket) => {
+          // Send leaderboard for each players
+          socket.send(
+            JSON.stringify({
+              type: "results",
+              results: results,
+            })
+          );
+        });
         break;
       }
       case "host-reset-game": {

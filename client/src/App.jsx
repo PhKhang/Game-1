@@ -36,7 +36,13 @@ function App() {
     };
 
     // Handle incoming messages
-    // socket.current.onmessage = (event) => {};
+    const handleMessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "update-players"){
+        setHostPlayers(data.players);
+      }
+    };
+    socket.current.addEventListener("message", handleMessage);
 
     // Handle socket close
     socket.current.onclose = () => {
@@ -50,8 +56,9 @@ function App() {
       // Clean up on unmount
       socket.current.close();
       window.removeEventListener("message", handleUploadMessage);
+      socket.current.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [socket]);
 
   const handleLogin = async (password, role) => {
     // Send request
@@ -158,7 +165,7 @@ function App() {
     return (
       <PlayerPage
         username={playerInfo.username}
-        playerId={playerInfo.id}
+        playerId={playerInfo.playerId}
         socket={socket}
       />
     );

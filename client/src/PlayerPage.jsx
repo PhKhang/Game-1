@@ -24,10 +24,10 @@ import "katex/dist/katex.min.css";
 
 // Mock data
 const mockPlayers = [
-  { id: 1, username: "Player1", score: 30 },
-  { id: 2, username: "Player2", score: 20 },
-  { id: 3, username: "Player3", score: 40 },
-  { id: 4, username: "Player4", score: 10 },
+  { id: 0, username: "Player1", score: 30 },
+  { id: 1, username: "Player2", score: 20 },
+  { id: 2, username: "Player3", score: 40 },
+  { id: 3, username: "Player4", score: 10 },
 ];
 
 export default function PlayerPage({ username, playerId, socket }) {
@@ -44,23 +44,36 @@ export default function PlayerPage({ username, playerId, socket }) {
     if (socket && socket.current) {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "start-question") {
-          question.current = data.question;
-          setContent(data.question.content);
-          setTimeLeft(data.question.time);
-          setCurrentRoundIndex(data.roundIndex);
-          setCurrentQuestionIndex(data.questionIndex);
-          setGameState("questionStart");
-        } else if (data.type === "hint") {
-          setContent((prev) => (prev += data.hint));
-        } else if (data.type === "results") {
-          setGameState("showResults");
-          setPlayerScores(data.results);
-        } else if (data.type === "round-results") {
-          setGameState("showRoundResults");
-          setPlayerScores(data.results);
-        } else if (data.type === "reset-score") {
-          setScore(data.newScore);
+        switch (data.type) {
+          case "start-question":
+            question.current = data.question;
+            setContent(data.question.content);
+            setTimeLeft(data.question.time);
+            setCurrentRoundIndex(data.roundIndex);
+            setCurrentQuestionIndex(data.questionIndex);
+            setGameState("questionStart");
+            break;
+          case "hint":
+            setContent((prev) => (prev += data.hint));
+            break;
+          case "results":
+            setGameState("showResults");
+            setPlayerScores(data.results);
+            break;
+          case "round-results":
+            setGameState("showRoundResults");
+            setPlayerScores(data.results);
+            break;
+          case "reset-score":
+            setScore(data.newScore);
+            break;
+          case "update-score":
+            setScore(data.newScore);
+            break;
+          default:
+            // optionally handle unknown types
+            console.warn("Unknown message type:", data.type);
+            break;
         }
       };
 
@@ -83,7 +96,7 @@ export default function PlayerPage({ username, playerId, socket }) {
                 {username}
               </div>
               <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-                Điểm: {score}
+                Score: {score}
               </div>
             </div>
             {gameState === "questionStart" && (
@@ -176,26 +189,26 @@ export default function PlayerPage({ username, playerId, socket }) {
               <AnswerMultipleChoice
                 options={question.current.options}
                 onSubmit={(answer) => {
-                  socket.current.send(
-                    JSON.stringify({
-                      type: "submit-answer",
-                      playerId: playerId,
-                      answer: answer,
-                    })
-                  );
+                  let response = {
+                    type: "submit-answer",
+                    playerId: playerId,
+                    answer: answer,
+                  };
+                  console.log(response);
+                  socket.current.send(JSON.stringify(response));
                 }}
               />
             ) : (
               <AnswerShortPhrase
                 hint={question.current.answer.length + " characters"}
                 onSubmit={(answer) => {
-                  socket.current.send(
-                    JSON.stringify({
-                      type: "submit-answer",
-                      playerId: playerId,
-                      answer: answer,
-                    })
-                  );
+                  let response = {
+                    type: "submit-answer",
+                    playerId: playerId,
+                    answer: answer,
+                  };
+                  console.log(response);
+                  socket.current.send(JSON.stringify(response));
                 }}
               />
             )}
