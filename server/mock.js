@@ -70,5 +70,18 @@ const questions = [
   ],
 ];
 
+const mockCredentials = {
+  // Server only, do NOT send to client
+  players: [
+    { id: 1, username: "A", password: "123" },
+    { id: 2, username: "B", password: "456" },
+    { id: 3, username: "C", password: "789" },
+    { id: 4, username: "D", password: "abc" },
+  ],
+  host: { password: "asdf" },
+  stage: { password: "hjkl" },
+};
+
 exports.playerData = playerData;
 exports.questions = questions;
+exports.credentials = mockCredentials;

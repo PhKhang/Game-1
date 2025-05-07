@@ -7,7 +7,6 @@ const AnswerMultipleChoice = ({ options, onSubmit }) => {
   const handleSubmit = (option) => {
     console.log(`Button pressed: ${option}`);
     setAnswer(option);
-    //TODO send answer to server
     if (onSubmit) onSubmit(answer);
     setAnswerSubmitted(true);
   };

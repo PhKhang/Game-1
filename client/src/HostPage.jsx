@@ -24,7 +24,14 @@ const PlayerStateBadge = ({ state }) => {
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
 
-export default function HostPage({ players, questions, socket, http }) {
+export default function HostPage({
+  players,
+  questions,
+  socket,
+  http,
+  onSetScore,
+  onSetPassword,
+}) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -87,22 +94,20 @@ export default function HostPage({ players, questions, socket, http }) {
     setGameState("questionStart");
   };
 
-  function showUploadPanel(){
+  function showUploadPanel() {
     window.open("/upload", "UploadFile", "width=600,height=800");
 
     const handleUploadMessage = (e) => {
-      if (e.data?.type === 'excel-upload-result') {
+      if (e.data?.type === "excel-upload-result") {
         const questions = e.data.questions;
-        console.log('Received Excel questions');
-        
+        console.log("Received Excel questions");
       }
-
     };
-    window.addEventListener()
+    window.addEventListener();
   }
 
   return (
-    <div className="flex min-h-screen flex-col p-4 bg-gradient-to-b from-blue-50 to-blue-100">
+    <div className="flex min-h-screen flex-col p-4">
       <div className="container mx-auto w-screen">
         <Card className="shadow-lg mb-4">
           <CardHeader>
@@ -251,7 +256,7 @@ export default function HostPage({ players, questions, socket, http }) {
                       JSON.stringify({
                         type: "host-reset-game",
                       })
-                    )
+                    );
                   }}
                 >
                   Reset
@@ -313,6 +318,13 @@ export default function HostPage({ players, questions, socket, http }) {
                         id={player.id}
                         username={player.username}
                         password={player.password}
+                        socket={socket}
+                        onSetScore={(newScore) =>
+                          onSetScore(player.id, newScore)
+                        }
+                        onSetPassword={(newPassword) =>
+                          onSetPassword(player.id, newPassword)
+                        }
                       ></Player>
                     );
                   })}

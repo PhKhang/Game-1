@@ -11,17 +11,40 @@ import { Button } from "@/components/ui/button";
 import { Eye, EyeClosed, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
-export default function Player({ id, username, password }) {
+export default function Player({
+  id,
+  username,
+  password,
+  socket,
+  onSetScore,
+  onSetPassword,
+}) {
   const [passwordValue, setPasswordValue] = useState(password);
   const [scoreValue, setScoreValue] = useState(0);
 
   const resetPassword = (newPassword) => {
     // TODO: reset password
+    onSetPassword(newPassword);
+    socket.current.send(
+      JSON.stringify({
+        type: "host-reset-password",
+        playerId: id,
+        newPassword: newPassword,
+      })
+    );
     toast.info("Password reset: " + newPassword);
   };
 
   const resetScore = (newScore) => {
     // TODO: reset score
+    onSetScore(newScore);
+    socket.current.send(
+      JSON.stringify({
+        type: "host-reset-score",
+        playerId: id,
+        newScore: newScore,
+      })
+    );
     toast.info("Score reset: " + newScore);
   };
 

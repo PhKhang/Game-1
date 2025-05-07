@@ -17,10 +17,11 @@ function App() {
   const socket = useRef(null);
   const http = useRef(null);
 
-  const handleUploadMessage = (e) => { // Handle new question upload
-    if (e.data?.type === 'excel-upload-result') {
+  const handleUploadMessage = (e) => {
+    // Handle new question upload
+    if (e.data?.type === "excel-upload-result") {
       const questions = e.data.questions;
-      console.log('Received Excel questions');
+      console.log("Received Excel questions");
       setHostQuestions(questions);
     }
   };
@@ -70,7 +71,7 @@ function App() {
           socket.current.removeEventListener("message", handleMessage);
           resolve(data);
         }
-        if (data.type === "error"){
+        if (data.type === "error") {
           reject(new Error(data.error));
         }
       };
@@ -133,6 +134,22 @@ function App() {
           questions={hostQuestions}
           socket={socket}
           http={http}
+          onSetScore={(id, newScore) => {
+            setHostPlayers(
+              hostPlayers.map((player) => {
+                if (player.id === id) player.score = newScore;
+                return player;
+              })
+            );
+          }}
+          onSetPassword={(id, newPassword) => {
+            setHostPlayers(
+              hostPlayers.map((player) => {
+                if (player.id === id) player.password = newPassword;
+                return player;
+              })
+            );
+          }}
         />
         <Toaster />
       </>

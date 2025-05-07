@@ -59,6 +59,8 @@ export default function PlayerPage({ username, playerId, socket }) {
         } else if (data.type === "round-results") {
           setGameState("showRoundResults");
           setPlayerScores(data.results);
+        } else if (data.type === "reset-score") {
+          setScore(data.newScore);
         }
       };
 
@@ -70,28 +72,6 @@ export default function PlayerPage({ username, playerId, socket }) {
       };
     }
   }, [socket]);
-
-  //TODO   const submitAnswer = (answer) => {
-  //     setSelectedAnswer(answer);
-  //     socket.send(JSON.stringify({ type: "submitAnswer", answer }));
-  //   };
-
-  // Mock game progression for demo purposes
-  // useEffect(() => {
-  //   // Wait until socket is connected before sending "play"
-  //   const checkSocketConnection = setInterval(() => {
-  //     if (
-  //       socket.current &&
-  //       socket.current.readyState === WebSocket.OPEN &&
-  //       gameState === "waiting"
-  //     ) {
-  //       socket.current.send("play");
-  //       clearInterval(checkSocketConnection);
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(checkSocketConnection);
-  // }, [gameState]);
 
   return (
     <div className="max-h-screen pt-4 flex flex-col">

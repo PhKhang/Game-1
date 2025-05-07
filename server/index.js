@@ -7,8 +7,9 @@ const XLSX = require("xlsx");
 const path = require("path");
 
 const {
-  playerData: mockPlayerData,
+  playerData: playerData,
   questions: mockQuestions,
+  credentials: credentials,
 } = require("./mock");
 
 const app = express();
@@ -22,29 +23,17 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-const mockCredentials = {
-  // Server only, do NOT send to client
-  players: [
-    { id: 1, username: "A", password: "123" },
-    { id: 2, username: "B", password: "456" },
-    { id: 3, username: "C", password: "789" },
-    { id: 4, username: "D", password: "abc" },
-  ],
-  host: { password: "asdf" },
-  stage: { password: "hjkl" },
-};
-
 function loginValidation(role, password) {
   let isValid = false;
   switch (role) {
     case "player":
-      isValid = mockCredentials.players.some((p) => p.password === password);
+      isValid = credentials.players.some((p) => p.password === password);
       break;
     case "host":
-      isValid = mockCredentials.host.password === password;
+      isValid = credentials.host.password === password;
       break;
     case "stage":
-      isValid = mockCredentials.stage.password === password;
+      isValid = credentials.stage.password === password;
       break;
     default:
       isValid = false;
@@ -75,7 +64,7 @@ function createGameSession() {
     players: {}, // Will store player state by ID
   };
 
-  mockPlayerData.forEach((player) => {
+  playerData.forEach((player) => {
     gameState.players[player.id] = {
       id: player.id,
       username: player.username,
@@ -103,10 +92,10 @@ function resetGameSession() {
   gameState.roundIndex = 0;
   gameState.questionIndex = 0;
 
-  mockPlayerData.forEach((player) => {
+  playerData.forEach((player) => {
     gameState.players[player.id].totalScore = 0;
     gameState.players[player.id].scores = [];
-    
+
     gameState.players[player.id].scores.push(
       ...Array(questions.length).fill([])
     );
@@ -169,7 +158,8 @@ function getQuestionResults(roundIndex, questionIndex) {
   ];
 
   scoreScheme.forEach((player) => {
-    player.score = gameState.players[player.id].scores[roundIndex][questionIndex];
+    player.score =
+      gameState.players[player.id].scores[roundIndex][questionIndex];
   });
 
   return scoreScheme;
@@ -295,19 +285,19 @@ wss.on("connection", (ws) => {
         // Handle valid connections
         switch (data.loginRole) {
           case "player": {
-            if(!rooms.hostRoom[0]){
+            if (!rooms.hostRoom[0]) {
               response = {
                 type: "error",
                 error: "Host has not joined the room yet!",
-              }
-              ws.send(JSON.stringify(response))
+              };
+              ws.send(JSON.stringify(response));
               return;
             }
 
-            let playerCred = mockCredentials.players.find(
+            let playerCred = credentials.players.find(
               (p) => p.password === data.password
             );
-            let player = mockPlayerData.find((p) => p.id === playerCred.id);
+            let player = playerData.find((p) => p.id === playerCred.id);
             response.username = player.username;
             response.playerId = player.id;
 
@@ -346,8 +336,8 @@ wss.on("connection", (ws) => {
             console.log("here");
             console.dir(gameState.players, { depth: null });
             response.status = "success";
-            response.players = mockPlayerData; // Players' usernames, scores and passwords
-            response.credentials = mockCredentials.players; // Player's passwords
+            response.players = playerData; // Players' usernames, scores and passwords
+            response.credentials = credentials.players; // Player's passwords
             // response.questions = mockQuestions; // Questions' type, content, time, answer and hints
             response.questions = questions; // Questions' type, content, time, answer and hints
             ws.id = 1000; // Host id
@@ -457,7 +447,47 @@ wss.on("connection", (ws) => {
       }
       case "host-reset-game": {
         resetGameSession();
-        //TODO Handle game reset for players
+        break;
+      }
+      case "host-reset-score": {
+        playerData.find((player) => player.id === data.playerId).score =
+          data.newScore;
+        let playerSocket = gameState.players[data.playerId].currentSocket;
+        // Player hasn't connected
+        if (!playerSocket) break;
+        // Reset player score
+        playerSocket.send(
+          JSON.stringify({ type: "reset-score", newScore: data.newScore })
+        );
+        console.log(
+          "Score reset, changed player id",
+          data.playerId,
+          "score to",
+          data.newScore
+        );
+        break;
+      }
+      case "host-reset-password": {
+        credentials.players.find(
+          (player) => player.id === data.playerId
+        ).password = data.newPassword;
+
+        let playerSocket = gameState.players[data.playerId].currentSocket;
+        // Player hasn't connected
+        if (!playerSocket) break;
+        // Soft close
+        playerSocket.close();
+        // Hard close
+        setTimeout(() => {
+          if (
+            [playerSocket.OPEN, playerSocket.CLOSING].includes(
+              playerSocket.readyState
+            )
+          ) {
+            playerSocket.terminate();
+          }
+        }, 5000);
+        break;
       }
     }
   });
@@ -477,7 +507,7 @@ wss.on("connection", (ws) => {
           gameState.players[playerId].lastSeen = Date.now();
           gameState.players[playerId].currentSocket = null;
 
-          let player = mockPlayerData.find((p) => p.id === ws.id);
+          let player = playerData.find((p) => p.id === ws.id);
           if (player) player.isConnected = false;
 
           if (rooms.hostRoom[0])
