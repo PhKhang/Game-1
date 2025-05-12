@@ -1,11 +1,9 @@
 import LoginPage from "./LoginPage";
 import HostPage from "./HostPage";
 import PlayerPage from "./PlayerPage";
-import QuestionPreview from "./components/host/question-preview";
 import { useState, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import Leaderboard from "@/components/player/leaderboard";
 import StagePage from "./StagePage";
 
 function App() {
@@ -38,7 +36,7 @@ function App() {
     // Handle incoming messages
     const handleMessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === "update-players"){
+      if (data.type === "update-players") {
         setHostPlayers(data.players);
       }
     };

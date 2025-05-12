@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Card,
-  CardTitle,
-  CardFooter,
-  CardHeader,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeClosed, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Player({
@@ -23,7 +15,6 @@ export default function Player({
   const [scoreValue, setScoreValue] = useState(0);
 
   const resetPassword = (newPassword) => {
-    // TODO: reset password
     onSetPassword(newPassword);
     socket.current.send(
       JSON.stringify({
@@ -36,7 +27,6 @@ export default function Player({
   };
 
   const resetScore = (newScore) => {
-    // TODO: reset score
     onSetScore(newScore);
     socket.current.send(
       JSON.stringify({

@@ -1,4 +1,4 @@
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Trophy, Medal } from "lucide-react";
 
 export default function Leaderboard({ players }) {

@@ -1,20 +1,7 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
-// import { Leaderboard } from "@/components/leaderboard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState, useEffect, useRef } from "react";
 import AnswerMultipleChoice from "@/components/player/answer-multiple-choice";
-import AnswerShortPhrase from "@/components/player/answer-short-phrase";
 import Timer from "@/components/player/timer";
 import Leaderboard from "@/components/player/leaderboard";
-import PreviewDiv from "@/components/preview-div";
 
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -66,28 +53,6 @@ export default function StagePage({ socket }) {
       };
     }
   }, [socket]);
-
-  //TODO   const submitAnswer = (answer) => {
-  //     setSelectedAnswer(answer);
-  //     socket.send(JSON.stringify({ type: "submitAnswer", answer }));
-  //   };
-
-  // Mock game progression for demo purposes
-  // useEffect(() => {
-  //   // Wait until socket is connected before sending "play"
-  //   const checkSocketConnection = setInterval(() => {
-  //     if (
-  //       socket.current &&
-  //       socket.current.readyState === WebSocket.OPEN &&
-  //       gameState === "waiting"
-  //     ) {
-  //       socket.current.send("play");
-  //       clearInterval(checkSocketConnection);
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(checkSocketConnection);
-  // }, [gameState]);
 
   return (
     <div className="h-screen max-h-screen pt-4 flex flex-col">

@@ -1,34 +1,15 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
-// import { Leaderboard } from "@/components/leaderboard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import AnswerMultipleChoice from "@/components/player/answer-multiple-choice";
 import AnswerShortPhrase from "@/components/player/answer-short-phrase";
 import Timer from "@/components/player/timer";
 import Leaderboard from "@/components/player/leaderboard";
-import PreviewDiv from "@/components/preview-div";
 
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-
-// Mock data
-const mockPlayers = [
-  { id: 0, username: "Player1", score: 30 },
-  { id: 1, username: "Player2", score: 20 },
-  { id: 2, username: "Player3", score: 40 },
-  { id: 3, username: "Player4", score: 10 },
-];
 
 export default function PlayerPage({ username, playerId, socket }) {
   const [gameState, setGameState] = useState("waiting");
