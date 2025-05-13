@@ -11,10 +11,10 @@ import "katex/dist/katex.min.css";
 
 // Mock data
 const mockPlayers = [
-  { id: "1", username: "Player1", score: 30 },
-  { id: "2", username: "Player2", score: 20 },
-  { id: "3", username: "Player3", score: 40 },
-  { id: "4", username: "Player4", score: 10 },
+  { id: "0", username: "A", score: 0 },
+  { id: "1", username: "B", score: 0 },
+  { id: "2", username: "C", score: 0 },
+  { id: "3", username: "D", score: 0 },
 ];
 
 export default function StagePage({ socket }) {
@@ -24,6 +24,7 @@ export default function StagePage({ socket }) {
   const [timeLeft, setTimeLeft] = useState(30);
   const question = useRef(null);
   const [content, setContent] = useState("");
+  const [leaderboard, setLeaderboard] = useState(mockPlayers);
 
   useEffect(() => {
     if (socket && socket.current) {
@@ -38,10 +39,12 @@ export default function StagePage({ socket }) {
           setGameState("questionStart");
         } else if (data.type === "hint") {
           setContent((prev) => prev + data.hint);
-        } else if (data.type === "leaderboard") {
-          // TODO
-        } else if (data.type === "round-leaderboard") {
-          // TODO
+        } else if (data.type === "results") {
+          setLeaderboard(data.results);
+          setGameState("showResults")
+        } else if (data.type === "roundResults") {
+          setLeaderboard(data.results);
+          setGameState("showRoundResults")
         }
       };
 
@@ -105,7 +108,7 @@ export default function StagePage({ socket }) {
                   {question.current.answer}
                 </span>
               </p>
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={leaderboard}></Leaderboard>
             </div>
           </div>
         </div>
@@ -114,7 +117,7 @@ export default function StagePage({ socket }) {
         <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={leaderboard}></Leaderboard>
             </div>
           </div>
         </div>

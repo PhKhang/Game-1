@@ -383,6 +383,14 @@ wss.on("connection", (ws) => {
             })
           );
         });
+        rooms.stageRoom[0].send(
+          JSON.stringify({
+            type: "start-question",
+            roundIndex: data.roundIndex,
+            questionIndex: data.questionIndex,
+            question: questions[data.roundIndex][data.questionIndex],
+          })
+        );
         break;
       }
       case "host-hint": {
@@ -390,6 +398,9 @@ wss.on("connection", (ws) => {
         rooms.playerRoom.forEach((socket) => {
           socket.send(JSON.stringify({ type: "hint", hint: data.hint }));
         });
+        rooms.stageRoom[0].send(
+          JSON.stringify({ type: "hint", hint: data.hint })
+        )
         break;
       }
       case "submit-answer": {
@@ -426,16 +437,10 @@ wss.on("connection", (ws) => {
           if (rooms.hostRoom[0]) {
             rooms.hostRoom[0].send(JSON.stringify(response));
           }
-
-          // Send score update to stage
-          if (rooms.stageRoom[0]) {
-            rooms.stageRoom[0].send(JSON.stringify(response));
-          }
         }
         break;
       }
       case "show-results": {
-        // debug();
         let results = getQuestionResults(data.roundIndex, data.questionIndex);
 
         // Update total score for players
@@ -459,6 +464,14 @@ wss.on("connection", (ws) => {
             })
           );
         });
+
+        rooms.stageRoom[0].send(
+          JSON.stringify({
+            type: "results",
+            results: results,
+          })
+        );
+
         break;
       }
       case "show-round-results": {
@@ -467,11 +480,18 @@ wss.on("connection", (ws) => {
           // Send leaderboard for each players
           socket.send(
             JSON.stringify({
-              type: "results",
+              type: "roundResults",
               results: results,
             })
           );
         });
+
+        rooms.stageRoom[0].send(
+          JSON.stringify({
+            type: "roundResults",
+            results: results,
+          })
+        );
         break;
       }
       case "host-reset-game": {
