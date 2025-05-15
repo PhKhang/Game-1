@@ -236,17 +236,17 @@ export default function HostPage({
                       );
                     });
                   }}
-                  // disabled={
-                  //   gameState !== "showRoundResults" &&
-                  //   (gameState !== "showResults" ||
-                  //     currentQuestionIndex >=
-                  //       questions[currentRoundIndex].length - 1)
-                  // }
                   disabled={
-                    gameState !== "showResults" ||
-                    currentQuestionIndex >=
-                      questions[currentRoundIndex].length - 1
+                    gameState !== "showRoundResults" &&
+                    (gameState !== "showResults" ||
+                      currentQuestionIndex >=
+                        questions[currentRoundIndex].length - 1)
                   }
+                  // disabled={
+                  //   gameState !== "showResults" ||
+                  //   currentQuestionIndex >=
+                  //     questions[currentRoundIndex].length - 1
+                  // }
                 >
                   Next question
                 </Button>

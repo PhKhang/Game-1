@@ -211,12 +211,6 @@ function updateScoresBasedOnRanking(questionKey) {
         console.log(`Player ${playerId} already awarded points for this question`);
         return;
       }
-      
-      // Reset previous score for this question if needed
-      let previousScore = gameState.players[playerId].scores[currentRound][currentQuestion];
-      if (previousScore > 0) {
-        gameState.players[playerId].score -= previousScore;
-      }
 
       updatePlayerScore(playerId, currentRound, currentQuestion, currentScore);
     
@@ -397,7 +391,7 @@ wss.on("connection", (ws) => {
             break;
           }
           case "host": {
-            questions = mockQuestions;
+            // questions = mockQuestions;
             createGameSession();
             response.status = "success";
             console.log(gameState.players[0].scores);
