@@ -550,6 +550,7 @@ wss.on("connection", (ws) => {
             JSON.stringify({
               type: "results",
               results: results,
+              newScore: gameState.players[socket.id].score,
             })
           );
         });

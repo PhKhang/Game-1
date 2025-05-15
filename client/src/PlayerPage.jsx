@@ -42,6 +42,7 @@ export default function PlayerPage({ username, playerId, socket }) {
           case "results":
             setGameState("showResults");
             setPlayerScores(data.results);
+            setScore(data.newScore);
             break;
           case "round-results":
             setGameState("showRoundResults");
