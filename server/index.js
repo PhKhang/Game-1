@@ -11,7 +11,6 @@ const {
   questions: mockQuestions,
   credentials: credentials,
 } = require("./mock");
-const { set } = require("animejs");
 
 const app = express();
 const server = http.createServer(app);
@@ -184,7 +183,7 @@ function updateScoresBasedOnRanking(questionKey) {
   const currentQuestion = parseInt(questionKey.split("-")[1]);
   const scores = [20, 15, 10, 5];
   let currentScoreIndex = 0;
-  
+
   // Group submissions by time to handle ties
   const submissionsByTime = {};
   submissions.forEach((submission) => {
@@ -202,18 +201,20 @@ function updateScoresBasedOnRanking(questionKey) {
 
   sortedTimes.forEach((time) => {
     const playerIds = submissionsByTime[time];
-    const currentScore = 
+    const currentScore =
       currentScoreIndex < scores.length ? scores[currentScoreIndex] : 0;
 
     playerIds.forEach((playerId) => {
       // Skip if this player has already been awarded points
       if (gameState.awardedPlayers.has(playerId)) {
-        console.log(`Player ${playerId} already awarded points for this question`);
+        console.log(
+          `Player ${playerId} already awarded points for this question`
+        );
         return;
       }
 
       updatePlayerScore(playerId, currentRound, currentQuestion, currentScore);
-    
+
       gameState.awardedPlayers.add(playerId);
 
       console.log(
@@ -222,7 +223,7 @@ function updateScoresBasedOnRanking(questionKey) {
         }, awarded ${currentScore} points`
       );
     });
-    
+
     currentScoreIndex++;
   });
 }
@@ -640,10 +641,12 @@ wss.on("connection", (ws) => {
     // Remove the disconnected client from all rooms
     if (rooms) {
       // Player room
-      if (rooms.playerRoom.includes(ws)) {
-        rooms.playerRoom = rooms.playerRoom.filter((client) => client !== ws);
+      if (rooms.playerRoom.some((client) => client.id === ws.id)) {
+        rooms.playerRoom = rooms.playerRoom.filter(
+          (client) => client.id !== ws.id
+        );
 
-        if (ws.id && gameState.players[ws.id]) {
+        if (gameState.players[ws.id]) {
           const playerId = ws.id;
           gameState.players[playerId].isConnected = false;
           gameState.players[playerId].lastSeen = Date.now();

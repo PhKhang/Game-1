@@ -47,7 +47,10 @@ export default function HostPage({
     if (socket && socket.current) {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "connect-player") {
+        if (
+          data.type === "connect-player" ||
+          data.type === "reconnect-player"
+        ) {
           players.find(
             (player) => player.id === data.playerId
           ).isConnected = true;
