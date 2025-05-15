@@ -273,10 +273,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
   }
 });
 
-function checkForQuestions() {
-  return questions ? true : false;
-}
-
 app.post("/upload-image", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
@@ -338,7 +334,7 @@ wss.on("connection", (ws) => {
           if (!data.loginRole) console.log("login failed");
           else console.log(data.loginRole + " login failed");
           ws.send(JSON.stringify(response));
-          return;
+          break;
         }
 
         // Handle valid connections
@@ -350,7 +346,7 @@ wss.on("connection", (ws) => {
                 error: "Host has not joined the room yet!",
               };
               ws.send(JSON.stringify(response));
-              return;
+              break;
             }
 
             let playerCred = credentials.players.find(
@@ -420,14 +416,15 @@ wss.on("connection", (ws) => {
         break;
       }
       case "host-start-question": {
-        if (!checkForQuestions()) {
+        if (questions === null) {
+          console.log("there is no questions");
           rooms.hostRoom[0].send(
             JSON.stringify({
               type: "error",
               error: "No question is found",
             })
           );
-          return;
+          break;
         }
         // Start new round
         gameState.roundIndex = data.roundIndex;
