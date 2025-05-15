@@ -11,6 +11,7 @@ const {
   questions: mockQuestions,
   credentials: credentials,
 } = require("./mock");
+const { set } = require("animejs");
 
 const app = express();
 const server = http.createServer(app);
@@ -53,14 +54,14 @@ let imagePaths = [];
 
 // Game session storage - persists even if players disconnect
 let gameState;
-
 function createGameSession() {
   gameState = {
     roomId: 12345,
     isActive: true,
     roundIndex: 0,
     questionIndex: 0,
-    score: 10,
+    submissions: {},
+    awardedPlayers: new Set(),
     players: [], // Will store player state by ID
   };
 
@@ -121,9 +122,8 @@ function removeGameSession() {
     isActive: false,
     roundIndex: 0,
     questionIndex: 0,
-    score: 10,
+    submissions: {},
     players: {},
-    scores: [],
   };
 }
 
@@ -178,6 +178,62 @@ function isCorrect(answer) {
   return answerLowerCase === correctAnswer;
 }
 
+function updateScoresBasedOnRanking(questionKey) {
+  const submissions = gameState.submissions[questionKey].correctAnswers;
+  const currentRound = parseInt(questionKey.split("-")[0]);
+  const currentQuestion = parseInt(questionKey.split("-")[1]);
+  const scores = [20, 15, 10, 5];
+  let currentScoreIndex = 0;
+  
+  // Group submissions by time to handle ties
+  const submissionsByTime = {};
+  submissions.forEach((submission) => {
+    const time = submission.submissionTime.toString();
+    if (!submissionsByTime[time]) {
+      submissionsByTime[time] = [];
+    }
+    submissionsByTime[time].push(submission.playerId);
+  });
+
+  // Sort times from fastest to slowest
+  const sortedTimes = Object.keys(submissionsByTime).sort(
+    (a, b) => parseInt(a) - parseInt(b)
+  );
+
+  sortedTimes.forEach((time) => {
+    const playerIds = submissionsByTime[time];
+    const currentScore = 
+      currentScoreIndex < scores.length ? scores[currentScoreIndex] : 0;
+
+    playerIds.forEach((playerId) => {
+      // Skip if this player has already been awarded points
+      if (gameState.awardedPlayers.has(playerId)) {
+        console.log(`Player ${playerId} already awarded points for this question`);
+        return;
+      }
+      
+      // Reset previous score for this question if needed
+      let previousScore = gameState.players[playerId].scores[currentRound][currentQuestion];
+      if (previousScore > 0) {
+        gameState.players[playerId].score -= previousScore;
+      }
+
+      updatePlayerScore(playerId, currentRound, currentQuestion, currentScore);
+    
+      gameState.awardedPlayers.add(playerId);
+
+      console.log(
+        `Player ${playerId} tied at position ${
+          currentScoreIndex + 1
+        }, awarded ${currentScore} points`
+      );
+    });
+    
+    currentScoreIndex++;
+  });
+}
+
+//// Questions uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.get("/upload", (req, res) => {
@@ -195,14 +251,13 @@ app.post("/upload", upload.single("file"), (req, res) => {
     const data = XLSX.utils.sheet_to_json(sheet);
 
     // `data` is an array of objects, one per row
-    let Round = 2;
+    let Round = 1;
     let rowIndex = 0;
 
     while (Round--) {
       let questionObj = [];
-      let questionsPerRound = 2;
 
-      while (questionsPerRound--) {
+      while (data[rowIndex]) {
         let row = data[rowIndex++];
 
         questionObj.push({
@@ -223,6 +278,10 @@ app.post("/upload", upload.single("file"), (req, res) => {
     res.status(500).json({ success: false, error: "Failed to process file" });
   }
 });
+
+function checkForQuestions() {
+  return questions ? true : false;
+}
 
 app.post("/upload-image", upload.single("file"), (req, res) => {
   try {
@@ -338,14 +397,13 @@ wss.on("connection", (ws) => {
             break;
           }
           case "host": {
-            // questions = mockQuestions;
+            questions = mockQuestions;
             createGameSession();
             response.status = "success";
             console.log(gameState.players[0].scores);
             response.players = gameState.players; // Players' usernames, scores and passwords
             // response.players = playerData; // Players' usernames, scores and passwords
             response.credentials = credentials.players; // Player's passwords
-            // response.questions = mockQuestions; // Questions' type, content, time, answer and hints
             response.questions = questions; // Questions' type, content, time, answer and hints
             ws.id = 1000; // Host id
             rooms.hostRoom.push(ws); // Join host room
@@ -368,9 +426,19 @@ wss.on("connection", (ws) => {
         break;
       }
       case "host-start-question": {
+        if (!checkForQuestions()) {
+          rooms.hostRoom[0].send(
+            JSON.stringify({
+              type: "error",
+              error: "No question is found",
+            })
+          );
+          return;
+        }
         // Start new round
         gameState.roundIndex = data.roundIndex;
         gameState.questionIndex = data.questionIndex;
+        gameState.awardedPlayers = new Set();
 
         // Send question to players
         rooms.playerRoom.forEach((player) => {
@@ -383,14 +451,16 @@ wss.on("connection", (ws) => {
             })
           );
         });
-        rooms.stageRoom[0].send(
-          JSON.stringify({
-            type: "start-question",
-            roundIndex: data.roundIndex,
-            questionIndex: data.questionIndex,
-            question: questions[data.roundIndex][data.questionIndex],
-          })
-        );
+        if (rooms.stageRoom[0]) {
+          rooms.stageRoom[0].send(
+            JSON.stringify({
+              type: "start-question",
+              roundIndex: data.roundIndex,
+              questionIndex: data.questionIndex,
+              question: questions[data.roundIndex][data.questionIndex],
+            })
+          );
+        }
         break;
       }
       case "host-hint": {
@@ -398,63 +468,91 @@ wss.on("connection", (ws) => {
         rooms.playerRoom.forEach((socket) => {
           socket.send(JSON.stringify({ type: "hint", hint: data.hint }));
         });
-        rooms.stageRoom[0].send(
-          JSON.stringify({ type: "hint", hint: data.hint })
-        )
+        if (rooms.stageRoom[0]) {
+          rooms.stageRoom[0].send(
+            JSON.stringify({ type: "hint", hint: data.hint })
+          );
+        }
         break;
       }
       case "submit-answer": {
-        // Update score for each player at a time
-        const { playerId, answer } = data;
+        // Get current question data
+        const { playerId, answer, submissionTime } = data;
+        const currentRound = gameState.roundIndex;
+        const currentQuestion = gameState.questionIndex;
+        const questionKey = `${currentRound}-${currentQuestion}`;
 
-        if (gameState.players[playerId]) {
-          // Update the player's score for this round
-          let newScore = 0;
-          console.log(
-            `Player ${playerId} is answering in round ${gameState.roundIndex}, question ${gameState.questionIndex}`
-          );
-          if (isCorrect(answer)) {
-            newScore = updatePlayerScore(
-              playerId,
-              gameState.roundIndex,
-              gameState.questionIndex,
-              gameState.score
-            );
-            // debug();
-          } else
-            newScore = updatePlayerScore(
-              playerId,
-              gameState.roundIndex,
-              gameState.questionIndex,
-              0
-            );
-          response = {
-            type: "update-players",
-            players: gameState.players,
+        console.log(
+          `player ${playerId}'s submission: `,
+          answer,
+          submissionTime
+        );
+
+        if (!gameState.submissions) {
+          gameState.submissions = {};
+        }
+
+        if (!gameState.submissions[questionKey]) {
+          gameState.submissions[questionKey] = {
+            correctAnswers: [],
+            processed: false,
           };
+        }
 
-          // Send score update to host
-          if (rooms.hostRoom[0]) {
-            rooms.hostRoom[0].send(JSON.stringify(response));
+        if (
+          gameState.players[playerId] &&
+          !gameState.submissions[questionKey].correctAnswers.some(
+            (entry) => entry.playerId === playerId
+          )
+        ) {
+          // Only track correct answers
+          if (isCorrect(answer)) {
+            // Add to correct answers list with submission time
+            gameState.submissions[questionKey].correctAnswers.push({
+              playerId,
+              submissionTime,
+            });
+
+            console.log(
+              `Player ${playerId} answered correctly in ${submissionTime}ms`
+            );
+
+            // Sort ranking based on submission time from fastest to slowest
+            gameState.submissions[questionKey].correctAnswers.sort(
+              (a, b) => a.submissionTime - b.submissionTime
+            );
+
+            updateScoresBasedOnRanking(questionKey);
+
+            if (rooms.hostRoom[0]) {
+              rooms.hostRoom[0].send(
+                JSON.stringify({
+                  type: "update-players",
+                  players: gameState.players,
+                  submissions:
+                    gameState.submissions[questionKey].correctAnswers,
+                })
+              );
+            }
+          } else {
+            // For incorrect answers, update with 0 points (to track attempts)
+            updatePlayerScore(playerId, currentRound, currentQuestion, 0);
+
+            // Notify host about the incorrect answer
+            if (rooms.hostRoom[0]) {
+              rooms.hostRoom[0].send(
+                JSON.stringify({
+                  type: "incorrect-answer",
+                  playerId: playerId,
+                })
+              );
+            }
           }
         }
         break;
       }
       case "show-results": {
         let results = getQuestionResults(data.roundIndex, data.questionIndex);
-
-        // Update total score for players
-        rooms.playerRoom.forEach((player) => {
-          player.send(
-            JSON.stringify({
-              type: "update-score",
-              roundIndex: data.roundIndex,
-              questionIndex: data.questionIndex,
-              newScore: gameState.players[player.id].score,
-            })
-          );
-        });
-
         rooms.playerRoom.forEach((socket) => {
           // Send leaderboard for each players
           socket.send(
@@ -465,13 +563,14 @@ wss.on("connection", (ws) => {
           );
         });
 
-        rooms.stageRoom[0].send(
-          JSON.stringify({
-            type: "results",
-            results: results,
-          })
-        );
-
+        if (rooms.stageRoom[0]) {
+          rooms.stageRoom[0].send(
+            JSON.stringify({
+              type: "roundResults",
+              results: results,
+            })
+          );
+        }
         break;
       }
       case "show-round-results": {
@@ -486,12 +585,14 @@ wss.on("connection", (ws) => {
           );
         });
 
-        rooms.stageRoom[0].send(
-          JSON.stringify({
-            type: "roundResults",
-            results: results,
-          })
-        );
+        if (rooms.stageRoom[0]) {
+          rooms.stageRoom[0].send(
+            JSON.stringify({
+              type: "roundResults",
+              results: results,
+            })
+          );
+        }
         break;
       }
       case "host-reset-game": {

@@ -15,7 +15,8 @@ export default function PlayerPage({ username, playerId, socket }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(90);
+  const [totalTime, setTotalTime] = useState(90);
   const [score, setScore] = useState(0);
   const [playerScores, setPlayerScores] = useState([]);
   const question = useRef(null);
@@ -30,6 +31,7 @@ export default function PlayerPage({ username, playerId, socket }) {
             question.current = data.question;
             setContent(data.question.content);
             setTimeLeft(data.question.time);
+            setTotalTime(data.question.time);
             setCurrentRoundIndex(data.roundIndex);
             setCurrentQuestionIndex(data.questionIndex);
             setGameState("questionStart");
@@ -83,7 +85,10 @@ export default function PlayerPage({ username, playerId, socket }) {
             {gameState === "questionStart" && (
               <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
                 <Timer
-                  seconds={timeLeft}
+                  seconds={totalTime}
+                  onTimeUpdate={(param) => {
+                    setTimeLeft(param)
+                  }}
                   onTimeout={() => {
                     setTimeLeft(0);
                     setGameState("questionEnd");
@@ -187,6 +192,7 @@ export default function PlayerPage({ username, playerId, socket }) {
                     type: "submit-answer",
                     playerId: playerId,
                     answer: answer,
+                    submissionTime: totalTime - timeLeft + 1,
                   };
                   console.log(response);
                   socket.current.send(JSON.stringify(response));

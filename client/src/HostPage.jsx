@@ -203,7 +203,7 @@ export default function HostPage({
                 >
                   Show results
                 </Button>
-                <Button
+                {/* <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showRoundResults");
@@ -221,7 +221,7 @@ export default function HostPage({
                   }
                 >
                   Show round results
-                </Button>
+                </Button> */}
                 <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
@@ -236,11 +236,16 @@ export default function HostPage({
                       );
                     });
                   }}
+                  // disabled={
+                  //   gameState !== "showRoundResults" &&
+                  //   (gameState !== "showResults" ||
+                  //     currentQuestionIndex >=
+                  //       questions[currentRoundIndex].length - 1)
+                  // }
                   disabled={
-                    gameState !== "showRoundResults" &&
-                    (gameState !== "showResults" ||
-                      currentQuestionIndex >=
-                        questions[currentRoundIndex].length - 1)
+                    gameState !== "showResults" ||
+                    currentQuestionIndex >=
+                      questions[currentRoundIndex].length - 1
                   }
                 >
                   Next question
