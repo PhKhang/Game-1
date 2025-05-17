@@ -1,27 +1,20 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
-// import { Leaderboard } from "@/components/leaderboard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState, useEffect, useRef } from "react";
 import AnswerMultipleChoice from "@/components/player/answer-multiple-choice";
-import AnswerShortPhrase from "@/components/player/answer-short-phrase";
 import Timer from "@/components/player/timer";
 import Leaderboard from "@/components/player/leaderboard";
-import PreviewDiv from "@/components/preview-div";
+
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 // Mock data
 const mockPlayers = [
-  { id: "1", username: "Player1", score: 30 },
-  { id: "2", username: "Player2", score: 20 },
-  { id: "3", username: "Player3", score: 40 },
-  { id: "4", username: "Player4", score: 10 },
+  { id: "0", username: "A", score: 0 },
+  { id: "1", username: "B", score: 0 },
+  { id: "2", username: "C", score: 0 },
+  { id: "3", username: "D", score: 0 },
 ];
 
 export default function StagePage({ socket }) {
@@ -31,6 +24,7 @@ export default function StagePage({ socket }) {
   const [timeLeft, setTimeLeft] = useState(30);
   const question = useRef(null);
   const [content, setContent] = useState("");
+  const [leaderboard, setLeaderboard] = useState(mockPlayers);
 
   useEffect(() => {
     if (socket && socket.current) {
@@ -45,10 +39,12 @@ export default function StagePage({ socket }) {
           setGameState("questionStart");
         } else if (data.type === "hint") {
           setContent((prev) => prev + data.hint);
-        } else if (data.type === "leaderboard") {
-          // TODO
-        } else if (data.type === "round-leaderboard") {
-          // TODO
+        } else if (data.type === "results") {
+          setLeaderboard(data.results);
+          setGameState("showResults")
+        } else if (data.type === "roundResults") {
+          setLeaderboard(data.results);
+          setGameState("showRoundResults")
         }
       };
 
@@ -61,28 +57,6 @@ export default function StagePage({ socket }) {
     }
   }, [socket]);
 
-  //TODO   const submitAnswer = (answer) => {
-  //     setSelectedAnswer(answer);
-  //     socket.send(JSON.stringify({ type: "submitAnswer", answer }));
-  //   };
-
-  // Mock game progression for demo purposes
-  // useEffect(() => {
-  //   // Wait until socket is connected before sending "play"
-  //   const checkSocketConnection = setInterval(() => {
-  //     if (
-  //       socket.current &&
-  //       socket.current.readyState === WebSocket.OPEN &&
-  //       gameState === "waiting"
-  //     ) {
-  //       socket.current.send("play");
-  //       clearInterval(checkSocketConnection);
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(checkSocketConnection);
-  // }, [gameState]);
-
   return (
     <div className="h-screen max-h-screen pt-4 flex flex-col">
       <div className="flex-none w-full px-8">
@@ -94,19 +68,21 @@ export default function StagePage({ socket }) {
           </div>
         </div>
         {gameState === "questionStart" && (
-          <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-            <Timer
-              seconds={timeLeft}
-              onTimeout={() => {
-                setTimeLeft(0);
-                setGameState("questionEnd");
-              }}
-            />
-          </div>
+          <>
+            <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
+              <Timer
+                seconds={timeLeft}
+                onTimeout={() => {
+                  setTimeLeft(0);
+                  setGameState("questionEnd");
+                }}
+              />
+            </div>
+            <h1 className="text-4xl text-center font-bold mt-2">
+              Vòng {currentRoundIndex + 1}, câu hỏi {currentQuestionIndex + 1}
+            </h1>
+          </>
         )}
-        <h1 className="text-4xl text-center font-bold mt-2">
-          Vòng {currentRoundIndex + 1}, câu hỏi {currentQuestionIndex + 1}
-        </h1>
       </div>
 
       {gameState === "waiting" && (
@@ -132,7 +108,7 @@ export default function StagePage({ socket }) {
                   {question.current.answer}
                 </span>
               </p>
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={leaderboard}></Leaderboard>
             </div>
           </div>
         </div>
@@ -141,7 +117,7 @@ export default function StagePage({ socket }) {
         <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={leaderboard}></Leaderboard>
             </div>
           </div>
         </div>
@@ -149,16 +125,15 @@ export default function StagePage({ socket }) {
       {(gameState === "questionStart" || gameState === "questionEnd") && (
         <>
           <div className="flex-auto bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
-            <PreviewDiv htmlContent={content} />
+            <ReactMarkdown
+              children={content}
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+            />
           </div>
           {question.current.type === "multiple-choice" ? (
             <div className="flex-none h-60 flex items-center justify-center">
-              <AnswerMultipleChoice
-                options={question.current.options}
-                onSubmit={() => {
-                  /**TODO */
-                }}
-              />
+              <AnswerMultipleChoice options={question.current.options} />
             </div>
           ) : (
             <div className="mb-4"></div>
