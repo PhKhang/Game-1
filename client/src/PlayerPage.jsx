@@ -1,35 +1,24 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
-// import { Leaderboard } from "@/components/leaderboard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import AnswerMultipleChoice from "@/components/player/answer-multiple-choice";
 import AnswerShortPhrase from "@/components/player/answer-short-phrase";
 import Timer from "@/components/player/timer";
 import Leaderboard from "@/components/player/leaderboard";
-import PreviewDiv from "@/components/preview-div";
 
-// Mock data
-const mockPlayers = [
-  { id: "1", username: "Player1", score: 30 },
-  { id: "2", username: "Player2", score: 20 },
-  { id: "3", username: "Player3", score: 40 },
-  { id: "4", username: "Player4", score: 10 },
-];
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
-export default function PlayerPage({ username, socket }) {
+export default function PlayerPage({ username, playerId, socket }) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(90);
+  const [totalTime, setTotalTime] = useState(90);
   const [score, setScore] = useState(0);
+  const [playerScores, setPlayerScores] = useState([]);
   const question = useRef(null);
   const [content, setContent] = useState("");
 
@@ -37,19 +26,38 @@ export default function PlayerPage({ username, socket }) {
     if (socket && socket.current) {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "start-question") {
-          question.current = data.question;
-          setContent(data.question.content);
-          setTimeLeft(data.question.time);
-          setCurrentRoundIndex(data.roundIndex);
-          setCurrentQuestionIndex(data.questionIndex);
-          setGameState("questionStart");
-        } else if (data.type === "hint") {
-          setContent((prev) => (prev += data.hint));
-        } else if (data.type === "leaderboard") {
-          // TODO
-        } else if (data.type === "round-leaderboard") {
-          // TODO
+        switch (data.type) {
+          case "start-question":
+            question.current = data.question;
+            setContent(data.question.content);
+            setTimeLeft(data.question.time);
+            setTotalTime(data.question.time);
+            setCurrentRoundIndex(data.roundIndex);
+            setCurrentQuestionIndex(data.questionIndex);
+            setGameState("questionStart");
+            break;
+          case "hint":
+            setContent((prev) => (prev += data.hint));
+            break;
+          case "results":
+            setGameState("showResults");
+            setPlayerScores(data.results);
+            setScore(data.newScore);
+            break;
+          case "round-results":
+            setGameState("showRoundResults");
+            setPlayerScores(data.results);
+            break;
+          case "reset-score":
+            setScore(data.newScore);
+            break;
+          case "update-score":
+            setScore(data.newScore);
+            break;
+          default:
+            // optionally handle unknown types
+            console.warn("Unknown message type:", data.type);
+            break;
         }
       };
 
@@ -62,28 +70,6 @@ export default function PlayerPage({ username, socket }) {
     }
   }, [socket]);
 
-  //TODO   const submitAnswer = (answer) => {
-  //     setSelectedAnswer(answer);
-  //     socket.send(JSON.stringify({ type: "submitAnswer", answer }));
-  //   };
-
-  // Mock game progression for demo purposes
-  // useEffect(() => {
-  //   // Wait until socket is connected before sending "play"
-  //   const checkSocketConnection = setInterval(() => {
-  //     if (
-  //       socket.current &&
-  //       socket.current.readyState === WebSocket.OPEN &&
-  //       gameState === "waiting"
-  //     ) {
-  //       socket.current.send("play");
-  //       clearInterval(checkSocketConnection);
-  //     }
-  //   }, 100);
-
-  //   return () => clearInterval(checkSocketConnection);
-  // }, [gameState]);
-
   return (
     <div className="max-h-screen pt-4 flex flex-col">
       <div className="flex-none w-full px-8">
@@ -94,13 +80,16 @@ export default function PlayerPage({ username, socket }) {
                 {username}
               </div>
               <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
-                Điểm: {score}
+                Score: {score}
               </div>
             </div>
             {gameState === "questionStart" && (
               <div className="bg-blue-500 px-3 py-1 rounded-full text-white">
                 <Timer
-                  seconds={timeLeft}
+                  seconds={totalTime}
+                  onTimeUpdate={(param) => {
+                    setTimeLeft(param)
+                  }}
                   onTimeout={() => {
                     setTimeLeft(0);
                     setGameState("questionEnd");
@@ -159,7 +148,7 @@ export default function PlayerPage({ username, socket }) {
                   {question.current.answer}
                 </span>
               </p>
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={playerScores}></Leaderboard>
             </div>
           </div>
         </div>
@@ -168,7 +157,7 @@ export default function PlayerPage({ username, socket }) {
         <div className="flex-none bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-col items-center justify-center py-8 text-center w-2xl">
-              <Leaderboard players={mockPlayers}></Leaderboard>
+              <Leaderboard players={playerScores}></Leaderboard>
             </div>
           </div>
         </div>
@@ -176,21 +165,38 @@ export default function PlayerPage({ username, socket }) {
       {gameState === "questionStart" && (
         <>
           <div className="flex-auto bg-blue-50/75 m-4 mb-0 p-4 rounded-2xl overflow-y-auto">
-            <PreviewDiv htmlContent={content} />
+            <ReactMarkdown
+              children={content}
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+            />
           </div>
           <div className="flex-none h-80 flex items-center justify-center">
             {question.current.type === "multiple-choice" ? (
               <AnswerMultipleChoice
                 options={question.current.options}
-                onSubmit={() => {
-                  // TODO
+                onSubmit={(answer) => {
+                  let response = {
+                    type: "submit-answer",
+                    playerId: playerId,
+                    answer: answer,
+                  };
+                  console.log(response);
+                  socket.current.send(JSON.stringify(response));
                 }}
               />
             ) : (
               <AnswerShortPhrase
                 hint={question.current.answer.length + " characters"}
-                onSubmit={() => {
-                  // TODO
+                onSubmit={(answer) => {
+                  let response = {
+                    type: "submit-answer",
+                    playerId: playerId,
+                    answer: answer,
+                    submissionTime: totalTime - timeLeft + 1,
+                  };
+                  console.log(response);
+                  socket.current.send(JSON.stringify(response));
                 }}
               />
             )}

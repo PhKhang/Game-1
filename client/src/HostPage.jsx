@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Copy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useRef, useEffect } from "react";
 import Player from "@/components/host/player";
@@ -24,7 +23,14 @@ const PlayerStateBadge = ({ state }) => {
   return <Badge className={badgeClassnames}>{state}</Badge>;
 };
 
-export default function HostPage({ players, questions, socket }) {
+export default function HostPage({
+  players,
+  questions,
+  socket,
+  http,
+  onSetScore,
+  onSetPassword,
+}) {
   const [gameState, setGameState] = useState("waiting");
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -37,12 +43,14 @@ export default function HostPage({ players, questions, socket }) {
       ])
     )
   );
-
   useEffect(() => {
     if (socket && socket.current) {
       const handleMessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "connect-player") {
+        if (
+          data.type === "connect-player" ||
+          data.type === "reconnect-player"
+        ) {
           players.find(
             (player) => player.id === data.playerId
           ).isConnected = true;
@@ -88,8 +96,20 @@ export default function HostPage({ players, questions, socket }) {
     setGameState("questionStart");
   };
 
+  function showUploadPanel() {
+    window.open("/upload", "UploadFile", "width=600,height=800");
+
+    const handleUploadMessage = (e) => {
+      if (e.data?.type === "excel-upload-result") {
+        const questions = e.data.questions;
+        console.log("Received Excel questions");
+      }
+    };
+    window.addEventListener();
+  }
+
   return (
-    <div className="flex min-h-screen flex-col p-4 bg-gradient-to-b from-blue-50 to-blue-100">
+    <div className="flex min-h-screen flex-col p-4">
       <div className="container mx-auto w-screen">
         <Card className="shadow-lg mb-4">
           <CardHeader>
@@ -174,19 +194,28 @@ export default function HostPage({ players, questions, socket }) {
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showResults");
-                    //TODO handle showing round result/leaderboard
-                    //TODO socket.current.send(JSON.stringify({}))
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "show-results",
+                        roundIndex: currentRoundIndex,
+                        questionIndex: currentQuestionIndex,
+                      })
+                    );
                   }}
                   disabled={gameState !== "questionEnd"}
                 >
                   Show results
                 </Button>
-                <Button
+                {/* <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
                     setGameState("showRoundResults");
-                    //TODO handle showing round result/leaderboard
-                    //TODO socket.current.send(JSON.stringify({}))
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "show-round-results",
+                        roundIndex: currentRoundIndex,
+                      })
+                    );
                   }}
                   disabled={
                     gameState !== "showResults" ||
@@ -195,7 +224,7 @@ export default function HostPage({ players, questions, socket }) {
                   }
                 >
                   Show round results
-                </Button>
+                </Button> */}
                 <Button
                   className="bg-blue-500 hover:bg-blue-600 m-1"
                   onClick={() => {
@@ -216,6 +245,11 @@ export default function HostPage({ players, questions, socket }) {
                       currentQuestionIndex >=
                         questions[currentRoundIndex].length - 1)
                   }
+                  // disabled={
+                  //   gameState !== "showResults" ||
+                  //   currentQuestionIndex >=
+                  //     questions[currentRoundIndex].length - 1
+                  // }
                 >
                   Next question
                 </Button>
@@ -225,6 +259,11 @@ export default function HostPage({ players, questions, socket }) {
                     setGameState("waiting");
                     setCurrentQuestionIndex(0);
                     setCurrentRoundIndex(0);
+                    socket.current.send(
+                      JSON.stringify({
+                        type: "host-reset-game",
+                      })
+                    );
                   }}
                 >
                   Reset
@@ -266,6 +305,14 @@ export default function HostPage({ players, questions, socket }) {
                       </div>
                     );
                   })}
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 font-bold m-1"
+                    onClick={() => {
+                      showUploadPanel();
+                    }}
+                  >
+                    Upload Questions
+                  </Button>
                 </div>
               </TabsContent>
 
@@ -274,9 +321,17 @@ export default function HostPage({ players, questions, socket }) {
                   {players.map((player) => {
                     return (
                       <Player
+                        key={player.id}
                         id={player.id}
                         username={player.username}
                         password={player.password}
+                        socket={socket}
+                        onSetScore={(newScore) =>
+                          onSetScore(player.id, newScore)
+                        }
+                        onSetPassword={(newPassword) =>
+                          onSetPassword(player.id, newPassword)
+                        }
                       ></Player>
                     );
                   })}

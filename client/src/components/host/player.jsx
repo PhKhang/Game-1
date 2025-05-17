@@ -1,25 +1,41 @@
 import { useState } from "react";
-import {
-  Card,
-  CardTitle,
-  CardFooter,
-  CardHeader,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeClosed, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
-export default function Player({ id, username, password }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [copyState, setCopyState] = useState(false);
+export default function Player({
+  id,
+  username,
+  password,
+  socket,
+  onSetScore,
+  onSetPassword,
+}) {
+  const [passwordValue, setPasswordValue] = useState(password);
+  const [scoreValue, setScoreValue] = useState(0);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(password);
-    setCopyState(true);
-    setTimeout(() => setCopyState(false), 1000);
-    toast.info("Copied to clipboard");
+  const resetPassword = (newPassword) => {
+    onSetPassword(newPassword);
+    socket.current.send(
+      JSON.stringify({
+        type: "host-reset-password",
+        playerId: id,
+        newPassword: newPassword,
+      })
+    );
+    toast.info("Password reset: " + newPassword);
+  };
+
+  const resetScore = (newScore) => {
+    onSetScore(newScore);
+    socket.current.send(
+      JSON.stringify({
+        type: "host-reset-score",
+        playerId: id,
+        newScore: newScore,
+      })
+    );
+    toast.info("Score reset: " + newScore);
   };
 
   return (
@@ -28,33 +44,48 @@ export default function Player({ id, username, password }) {
         <CardTitle className="text-blue-600">{username}</CardTitle>
       </CardHeader>
       <CardContent>
-        <span className="pr-2">Password:</span>
-        <input
-          type="text"
-          className="w-48 outline rounded-xs px-1"
-          value={showPassword ? password : "•".repeat(password.length)}
-          disabled
-        />
-        <Button
-          size="icon"
-          variant="outline"
-          className="ml-1"
-          onClick={() => setShowPassword(!showPassword)}
-        >
-          {showPassword ? (
-            <Eye className="w-6" />
-          ) : (
-            <EyeClosed className="w-5" />
-          )}
-        </Button>
-        <Button
-          size="icon"
-          className="ml-1"
-          variant="outline"
-          onClick={handleCopy}
-        >
-          {copyState ? <Check /> : <Copy />}
-        </Button>
+        <div>
+          <label>
+            Password:
+            <input
+              type="text"
+              name="password-field"
+              className="w-48 outline rounded-xs px-1 mx-2"
+              value={passwordValue}
+              onChange={(e) => {
+                e.preventDefault();
+                setPasswordValue(e.target.value);
+              }}
+            />
+          </label>
+          <Button
+            className="ml-1 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => resetPassword(passwordValue)}
+          >
+            Reset password
+          </Button>
+        </div>
+        <div className="pt-2">
+          <label>
+            Score (must be a number):
+            <input
+              type="number"
+              name="score-field"
+              className="w-48 outline rounded-xs px-1 mx-2"
+              value={scoreValue}
+              onChange={(e) => {
+                e.preventDefault();
+                setScoreValue(e.target.value);
+              }}
+            />
+          </label>
+          <Button
+            className="ml-1 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => resetScore(scoreValue)}
+          >
+            Reset score
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

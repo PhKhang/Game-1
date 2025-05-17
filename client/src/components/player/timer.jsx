@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Timer = ({ seconds, onTimeout }) => {
+const Timer = ({ seconds, onTimeUpdate, onTimeout }) => {
   const [currSeconds, setCurrSeconds] = useState(seconds + 1);
   const timeoutRef = useRef(null);
 
@@ -8,6 +8,7 @@ const Timer = ({ seconds, onTimeout }) => {
     if (currSeconds > 0) {
       timeoutRef.current = setTimeout(() => {
         setCurrSeconds((prev) => prev - 1);
+        if (onTimeUpdate) onTimeUpdate(Math.max(0, currSeconds - 1));
       }, 1000);
     } else {
       clearTimeout(timeoutRef.current);
@@ -15,7 +16,7 @@ const Timer = ({ seconds, onTimeout }) => {
     }
 
     return () => clearTimeout(timeoutRef.current);
-  }, [currSeconds, onTimeout]);
+  }, [currSeconds, onTimeUpdate, onTimeout]);
 
   const formatTime = (sec) => {
     const minutes = Math.floor(sec / 60)

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Questions and Images</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1,
+      h2 {
+        color: #333;
+      }
+
+      form {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+
+      input[type="file"] {
+        margin-bottom: 15px;
+        width: 100%;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .response {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Upload Questions and Images</h1>
+
+    <h2>Upload Question Sheet (XLSX)</h2>
+    <form id="xlsxForm" enctype="multipart/form-data">
+      <label for="xlsxFile">Select XLSX File:</label>
+      <input type="file" id="xlsxFile" name="file" accept=".xlsx" required />
+      <button type="submit">Upload Questions</button>
+    </form>
+
+    <h2>Upload Images (PNG, JPG, SVG)</h2>
+    <form id="imageForm" enctype="multipart/form-data">
+      <label for="imageFile">Select Image File:</label>
+      <input
+        type="file"
+        id="imageFile"
+        name="image"
+        accept=".png,.jpg,.jpeg,.svg"
+        required
+      />
+      <button type="submit">Upload Image</button>
+    </form>
+
+    <button type="close" onclick="window.close()">Finish Upload</button>
+
+    <div id="response" class="response"></div>
+
+    <script>
+      document
+        .getElementById("xlsxForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData();
+          const fileField = document.getElementById("xlsxFile");
+
+          if (fileField.files[0]) {
+            formData.append("file", fileField.files[0]);
+
+            try {
+              const response = await fetch("/upload", {
+                method: "POST",
+                body: formData,
+              });
+
+              const result = await response.json();
+              if (!result.success) {
+                throw result.error;
+              } else if (result.success && result.questions) {
+                window.opener.postMessage(
+                  {
+                    type: "excel-upload-result",
+                    questions: result.questions,
+                  },
+                  "*"
+                ); // or use specific origin for security
+              }
+
+              showResponse(`Uploaded questions: ${fileField.files[0].name}`);
+            } catch (error) {
+              showResponse(error);
+            }
+          }
+        });
+
+      document
+        .getElementById("imageForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData();
+          const fileField = document.getElementById("imageFile");
+
+          if (fileField.files[0]) {
+            formData.append("file", fileField.files[0]);
+
+            try {
+              const response = await fetch("/upload-image", {
+                method: "POST",
+                body: formData,
+              });
+
+              const result = await response.json();
+
+              if (!result.success) {
+                throw result.error;
+              } else if (result.success && result.imagePath) {
+                window.opener.postMessage(
+                  {
+                    type: "excel-upload-result",
+                    imagePath: imagePath,
+                  },
+                  "*"
+                ); // or use specific origin for security
+              }
+              showResponse(`Uploaded image: ${fileField.files[0].name}`);
+            } catch (error) {
+              showResponse(error);
+            }
+          }
+        });
+
+      function showResponse(data) {
+        const responseDiv = document.getElementById("response");
+        responseDiv.style.display = "block";
+        responseDiv.innerHTML =
+          "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+      }
+    </script>
+  </body>
+</html>
